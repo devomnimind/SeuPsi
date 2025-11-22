@@ -26,7 +26,7 @@ export const Mindfulness = () => {
 
     useEffect(() => {
         if (selectedMeditation) {
-            setTimeLeft(selected Meditation.duration_seconds);
+            setTimeLeft(selectedMeditation.duration_seconds);
             setIsPlaying(true);
         }
     }, [selectedMeditation]);
