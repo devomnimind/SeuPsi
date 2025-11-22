@@ -36,6 +36,56 @@ export const useGuardianData = () => {
 
     useEffect(() => {
         if (user) {
+           const fetchMinors = async () => {
+        if (!user) return;
+
+        // First, get guardian relationships for this guardian
+        const { data: relData, error: relError } = await supabase
+            .from('guardian_relationships')
+            .select('minor_id, relationship_type, alert_level')
+            .eq('guardian_id', user.id)
+            .eq('status', 'active');
+
+        if (relError) {
+            console.error('Error fetching guardian relationships:', relError);
+            setLoading(false);
+            return;
+        }
+
+        const minorIds = relData.map((r: any) => r.minor_id);
+        if (minorIds.length === 0) {
+            setMinors([]);
+            setLoading(false);
+            return;
+        }
+
+        // Then fetch the profile details for those minors
+        const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, full_name, avatar_url')
+            .in('id', minorIds);
+
+        if (profileError) {
+            console.error('Error fetching minor profiles:', profileError);
+            setLoading(false);
+            return;
+        }
+
+        const formattedMinors = profileData.map((p: any) => ({
+            id: p.id,
+            full_name: p.full_name,
+            avatar_url: p.avatar_url,
+            // relationship and alert info come from the earlier query
+            relationship_type: relData.find((r: any) => r.minor_id === p.id)?.relationship_type || '',
+            alert_level: relData.find((r: any) => r.minor_id === p.id)?.alert_level || ''
+        }));
+
+        setMinors(formattedMinors);
+        if (formattedMinors.length > 0) {
+            setSelectedMinor(formattedMinors[0]);
+        }
+        setLoading(false);
+    };
             fetchMinors();
         }
     }, [user]);
@@ -49,38 +99,6 @@ export const useGuardianData = () => {
             ]);
         }
     }, [selectedMinor]);
-
-    const fetchMinors = async () => {
-        if (!user) return;
-
-        const { data, error } = await supabase
-            .from('guardian_relationships')
-            .select(`
-                minor_id,
-                relationship_type,
-                alert_level,
-                minor:profiles!guardian_relationships_minor_id_fkey(id, full_name, avatar_url)
-            `)
-            .eq('guardian_id', user.id)
-            .eq('status', 'active');
-
-        if (error) {
-            console.error('Error fetching minors:', error);
-        } else {
-            const formattedMinors = data.map((item: any) => ({
-                id: item.minor.id,
-                full_name: item.minor.full_name,
-                avatar_url: item.minor.avatar_url,
-                relationship_type: item.relationship_type,
-                alert_level: item.alert_level
-            }));
-            setMinors(formattedMinors);
-            if (formattedMinors.length > 0) {
-                setSelectedMinor(formattedMinors[0]);
-            }
-        }
-        setLoading(false);
-    };
 
     const fetchMetrics = async (minorId: string) => {
         const { data, error } = await supabase

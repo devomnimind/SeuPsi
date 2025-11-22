@@ -16,6 +16,14 @@ import { SafetyCenter } from './pages/SafetyCenter';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { AiTherapist } from './pages/AiTherapist';
+import { HeroJourney } from './pages/HeroJourney';
+
+// ... dentro das rotas protegidas
+<Route path="hero-journey" element={
+  <ProtectedRoute>
+    <HeroJourney />
+  </ProtectedRoute>
+} />
 
 import { GuardianDashboard } from './components/safety/GuardianDashboard';
 import { EmergencyContactsConfig } from './components/safety/EmergencyContactsConfig';

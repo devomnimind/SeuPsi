@@ -3,6 +3,8 @@ import { Send, MessageCircle, ArrowLeft } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { ModerationService } from '../services/ModerationService';
+import { toast } from 'sonner';
 
 type Conversation = {
     conversation_id: number;
@@ -127,6 +129,13 @@ export const PrivateChat = () => {
     const sendMessage = async () => {
         if (!user || !selectedConversation || !newMessage.trim()) return;
 
+        // Moderação
+        const moderation = ModerationService.analyzeText(newMessage);
+        if (!moderation.isSafe) {
+            toast.error('Mensagem bloqueada por conter termos inadequados.');
+            return;
+        }
+
         const { error } = await supabase.rpc('send_message', {
             p_sender_id: user.id,
             p_receiver_id: selectedConversation.other_user_id,
@@ -135,10 +144,11 @@ export const PrivateChat = () => {
 
         if (error) {
             console.error('Error sending message:', error);
-            alert('Erro ao enviar mensagem');
+            toast.error('Erro ao enviar mensagem');
         } else {
             setNewMessage('');
-            fetchConversations(); // Atualizar preview
+            fetchMessages(selectedConversation.conversation_id); // Use conversation_id
+            fetchConversations(); // Atualizar preview da conversa
         }
     };
 

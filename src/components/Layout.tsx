@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Brain, BookOpen, User, UserCheck, ShieldAlert, FileText, Users, Menu, X, LogIn, LogOut, Target, Trophy, MessageSquare, Shield } from 'lucide-react';
+import { Home, Brain, BookOpen, User, UserCheck, ShieldAlert, FileText, Users, Menu, X, LogIn, LogOut, Target, Trophy, MessageSquare, Shield, Sword } from 'lucide-react';
 import { GlassCard } from './ui/GlassCard';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -34,7 +34,7 @@ export const Layout = () => {
         { path: '/meta360', icon: <Target size={20} />, label: 'Meta360' },
         { path: '/engagement', icon: <Trophy size={20} />, label: 'Engajamento' },
         { path: '/safety', icon: <Shield size={20} />, label: 'Segurança' },
-        { path: '/libertamente', icon: <ShieldAlert size={20} />, label: 'LibertaMente', className: 'text-red-500 hover:text-red-400' },
+
         { path: '/profile', icon: <User size={20} />, label: 'Perfil' },
     ];
 
@@ -95,13 +95,18 @@ px - 4 py - 2 rounded - xl flex items - center gap - 2 transition - all duration
                         )}
                     </nav>
 
-                    {/* Mobile Menu Button */}
-                    <button
-                        onClick={toggleMenu}
-                        className="md:hidden text-white p-2 hover:bg-white/10 rounded-lg transition-colors"
-                    >
-                        {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-                    </button>
+                    {/* Mobile Menu Button and Hero Journey Link */}
+                    <div className="md:hidden flex items-center gap-2">
+                        <Link to="/hero-journey" className="p-2 hover:bg-white/10 rounded-xl transition-colors text-gray-400 hover:text-neon-purple">
+                            <Sword size={24} />
+                        </Link>
+                        <button
+                            onClick={toggleMenu}
+                            className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors"
+                        >
+                            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                        </button>
+                    </div>
                 </div>
             </header>
 

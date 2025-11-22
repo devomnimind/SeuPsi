@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Brain, BookOpen, ShieldAlert, Target, Flame, Trophy, TrendingUp, Clock } from 'lucide-react';
+import { Brain, BookOpen, ShieldAlert, Target, Flame, Trophy, TrendingUp, Clock, Bot, Sword, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { useDashboardData } from '../hooks/useDashboardData';
@@ -158,21 +158,21 @@ export const Home = () => {
             <section>
                 <h2 className="text-2xl font-bold text-white mb-4">Início Rápido</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <Link to="/mindfulness">
-                        <GlassCard hoverEffect className="p-4 text-center group border-indigo-500/20 hover:border-indigo-500/50">
-                            <div className="bg-indigo-500/20 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 text-indigo-400 group-hover:scale-110 transition-all">
-                                <Brain size={24} />
+                    <Link to="/ai-therapist">
+                        <GlassCard hoverEffect className="p-4 text-center group border-purple-500/20 hover:border-purple-500/50">
+                            <div className="bg-purple-500/20 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 text-purple-400 group-hover:scale-110 transition-all">
+                                <Bot size={24} />
                             </div>
-                            <h3 className="font-semibold text-white text-sm">Meditar</h3>
+                            <h3 className="font-semibold text-white text-sm">IA Terapeuta</h3>
                         </GlassCard>
                     </Link>
 
-                    <Link to="/studies">
-                        <GlassCard hoverEffect className="p-4 text-center group border-emerald-500/20 hover:border-emerald-500/50">
-                            <div className="bg-emerald-500/20 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 text-emerald-400 group-hover:scale-110 transition-all">
-                                <BookOpen size={24} />
+                    <Link to="/hero-journey">
+                        <GlassCard hoverEffect className="p-4 text-center group border-yellow-500/20 hover:border-yellow-500/50">
+                            <div className="bg-yellow-500/20 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 text-yellow-400 group-hover:scale-110 transition-all">
+                                <Sword size={24} />
                             </div>
-                            <h3 className="font-semibold text-white text-sm">Estudar</h3>
+                            <h3 className="font-semibold text-white text-sm">RPG</h3>
                         </GlassCard>
                     </Link>
 
@@ -225,6 +225,16 @@ export const Home = () => {
                         </GlassCard>
                     </Link>
 
+                    <Link to="/social">
+                        <GlassCard hoverEffect className="p-6 h-full group border-blue-500/20 hover:border-blue-500/50">
+                            <div className="bg-blue-500/20 w-14 h-14 rounded-2xl flex items-center justify-center mb-4 text-blue-400 group-hover:scale-110 transition-all shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+                                <Users size={28} />
+                            </div>
+                            <h3 className="font-bold text-xl mb-2 text-white">Comunidade</h3>
+                            <p className="text-sm text-gray-400">Conecte-se com outros e participe de rodas de conversa.</p>
+                        </GlassCard>
+                    </Link>
+
                     <Link to="/studies">
                         <GlassCard hoverEffect className="p-6 h-full group border-emerald-500/20 hover:border-emerald-500/50">
                             <div className="bg-emerald-500/20 w-14 h-14 rounded-2xl flex items-center justify-center mb-4 text-emerald-400 group-hover:scale-110 transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)]">
@@ -232,16 +242,6 @@ export const Home = () => {
                             </div>
                             <h3 className="font-bold text-xl mb-2 text-white">Estudos</h3>
                             <p className="text-sm text-gray-400">Trilhas de conhecimento personalizadas.</p>
-                        </GlassCard>
-                    </Link>
-
-                    <Link to="/libertamente">
-                        <GlassCard hoverEffect className="p-6 h-full group border-red-500/20 hover:border-red-500/50">
-                            <div className="bg-red-500/20 w-14 h-14 rounded-2xl flex items-center justify-center mb-4 text-red-400 group-hover:scale-110 transition-all shadow-[0_0_15px_rgba(239,68,68,0.2)]">
-                                <ShieldAlert size={28} />
-                            </div>
-                            <h3 className="font-bold text-xl mb-2 text-white">LibertaMente</h3>
-                            <p className="text-sm text-gray-400">Apoio para superação de desafios pessoais.</p>
                         </GlassCard>
                     </Link>
                 </div>

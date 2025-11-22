@@ -3,6 +3,8 @@ import { Send, Bot, User, Plus, Loader2, Brain, Sparkles, Theater, Sofa } from '
 import { GlassCard } from '../ui/GlassCard';
 import { useAuth } from '../../contexts/AuthContext';
 import { AiService, type Message, type Session, type TherapyMode } from '../../services/AiService';
+import { ModerationService } from '../../services/ModerationService';
+import { toast } from 'sonner';
 
 export const AiChatWindow = () => {
     const { user } = useAuth();
@@ -76,6 +78,13 @@ export const AiChatWindow = () => {
 
     const handleSend = async () => {
         if (!input.trim() || !user || sending) return;
+
+        // Moderação
+        const moderation = ModerationService.analyzeText(input);
+        if (!moderation.isSafe) {
+            toast.error('Sua mensagem contém termos inadequados. Por favor, reformule.');
+            return;
+        }
 
         const content = input.trim();
         setInput('');
