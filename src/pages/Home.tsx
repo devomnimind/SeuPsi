@@ -87,7 +87,7 @@ export const Home = () => {
                 .single();
 
             setData({
-                user Name: profile?.full_name?.split(' ')[0] || 'Viajante',
+                userName: profile?.full_name?.split(' ')[0] || 'Viajante',
                 level: profile?.level || 1,
                 xp: profile?.xp || 0,
                 currentStreak: streak?.current_streak || 0,
