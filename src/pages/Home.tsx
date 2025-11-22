@@ -1,0 +1,302 @@
+import { useEffect, useState } from 'react';
+import { Brain, BookOpen, ShieldAlert, Target, Flame, Trophy, TrendingUp, Clock, Play } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { GlassCard } from '../components/ui/GlassCard';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
+
+type DashboardData = {
+    userName: string;
+    level: number;
+    xp: number;
+    currentStreak: number;
+    todayChallenges: {
+        id: number;
+        title: string;
+        current_progress: number;
+        target_value: number;
+        completed: boolean;
+    }[];
+    recentAchievement?: {
+        title: string;
+        icon: string;
+    };
+};
+
+export const Home = () => {
+    const { user } = useAuth();
+    const [data, setData] = useState<DashboardData>({
+        userName: 'Viajante',
+        level: 1,
+        xp: 0,
+        currentStreak: 0,
+        todayChallenges: [],
+    });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (user) {
+            fetchDashboardData();
+        }
+    }, [user]);
+
+    const fetchDashboardData = async () => {
+        if (!user) return;
+
+        try {
+            // Buscar perfil do usuário
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('full_name, level, xp')
+                .eq('id', user.id)
+                .single();
+
+            // Buscar streak
+            const { data: streak } = await supabase
+                .from('user_streaks')
+                .select('current_streak')
+                .eq('user_id', user.id)
+                .single();
+
+            // Buscar desafios de hoje
+            const { data: challenges } = await supabase
+                .from('daily_challenges')
+                .select('id, title, target_value, xp_reward')
+                .eq('active_date', new Date().toISOString().split('T')[0]);
+
+            // Buscar progresso nos desafios
+            const { data: userChallenges } = await supabase
+                .from('user_challenges')
+                .select('challenge_id, current_progress, completed')
+                .eq('user_id', user.id);
+
+            // Combinar dados
+            const challengesWithProgress = challenges?.map(c => ({
+                ...c,
+                current_progress: userChallenges?.find(uc => uc.challenge_id === c.id)?.current_progress || 0,
+                completed: userChallenges?.find(uc => uc.challenge_id === c.id)?.completed || false
+            })) || [];
+
+            // Buscar última conquista
+            const { data: recentAchievement } = await supabase
+                .from('user_achievements')
+                .select('achievement_id, achievements(title, icon)')
+                .eq('user_id', user.id)
+                .order('unlocked_at', { ascending: false })
+                .limit(1)
+                .single();
+
+            setData({
+                user Name: profile?.full_name?.split(' ')[0] || 'Viajante',
+                level: profile?.level || 1,
+                xp: profile?.xp || 0,
+                currentStreak: streak?.current_streak || 0,
+                todayChallenges: challengesWithProgress,
+                recentAchievement: recentAchievement?.achievements
+                    ? { title: (recentAchievement.achievements as any).title, icon: (recentAchievement.achievements as any).icon }
+                    : undefined
+            });
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour < 12) return 'Bom dia';
+        if (hour < 18) return 'Boa tarde';
+        return 'Boa noite';
+    };
+
+    const nextLevelXp = data.level * 100;
+    const xpProgress = (data.xp / nextLevelXp) * 100;
+
+    if (loading) {
+        return <div className="text-center text-white mt-10">Carregando...</div>;
+    }
+
+    return (
+        <div className="space-y-6 animate-fade-in">
+            {/* Header com saudação */}
+            <section className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-neon-purple to-neon-green opacity-20 blur-3xl rounded-full"></div>
+                <GlassCard className="p-8 relative overflow-hidden border-neon-purple/30">
+                    <div className="relative z-10">
+                        <h1 className="text-4xl font-bold mb-2 text-white">
+                            {getGreeting()}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-purple to-neon-green">{data.userName}</span>!
+                        </h1>
+                        <p className="text-gray-300 mb-6 text-lg">Pronto para mais um dia de crescimento?</p>
+
+                        {/* Stats Row */}
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <TrendingUp size={20} className="text-neon-purple" />
+                                    <span className="text-sm text-gray-400">Nível</span>
+                                </div>
+                                <p className="text-2xl font-bold text-white">{data.level}</p>
+                                <div className="mt-2">
+                                    <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-gradient-to-r from-neon-purple to-neon-green transition-all duration-500"
+                                            style={{ width: `${xpProgress}%` }}
+                                        ></div>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1">{data.xp}/{nextLevelXp} XP</p>
+                                </div>
+                            </div>
+
+                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Flame size={20} className="text-orange-500" />
+                                    <span className="text-sm text-gray-400">Sequência</span>
+                                </div>
+                                <p className="text-2xl font-bold text-white">{data.currentStreak} dias</p>
+                                <p className="text-xs text-gray-500 mt-1">Continue assim!</p>
+                            </div>
+
+                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Target size={20} className="text-neon-green" />
+                                    <span className="text-sm text-gray-400">Desafios Hoje</span>
+                                </div>
+                                <p className="text-2xl font-bold text-white">
+                                    {data.todayChallenges.filter(c => c.completed).length}/{data.todayChallenges.length}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {data.todayChallenges.filter(c => c.completed).length === data.todayChallenges.length
+                                        ? 'Todos completos!'
+                                        : 'Vamos lá!'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </GlassCard>
+            </section>
+
+            {/* Desafios de Hoje */}
+            {data.todayChallenges.length > 0 && (
+                <section>
+                    <h2 className="text-2xl font-bold text-white mb-4">Desafios de Hoje</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {data.todayChallenges.map(challenge => (
+                            <GlassCard key={challenge.id} className={`p-4 ${challenge.completed ? 'border-neon-green' : ''}`}>
+                                <div className="flex items-center justify-between mb-2">
+                                    <h3 className="font-semibold text-white">{challenge.title}</h3>
+                                    {challenge.completed && (
+                                        <span className="text-neon-green text-sm font-semibold">✓ Completo</span>
+                                    )}
+                                </div>
+                                <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-2">
+                                    <div
+                                        className={`h-full transition-all duration-500 ${challenge.completed ? 'bg-neon-green' : 'bg-neon-purple'
+                                            }`}
+                                        style={{ width: `${(challenge.current_progress / challenge.target_value) * 100}%` }}
+                                    ></div>
+                                </div>
+                                <p className="text-xs text-gray-400">
+                                    {challenge.current_progress}/{challenge.target_value} {challenge.completed ? '- Parabéns!' : ''}
+                                </p>
+                            </GlassCard>
+                        ))}
+                    </div>
+                </section>
+            )}
+
+            {/* Quick Actions */}
+            <section>
+                <h2 className="text-2xl font-bold text-white mb-4">Início Rápido</h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <Link to="/mindfulness">
+                        <GlassCard hoverEffect className="p-4 text-center group border-indigo-500/20 hover:border-indigo-500/50">
+                            <div className="bg-indigo-500/20 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 text-indigo-400 group-hover:scale-110 transition-all">
+                                <Brain size={24} />
+                            </div>
+                            <h3 className="font-semibold text-white text-sm">Meditar</h3>
+                        </GlassCard>
+                    </Link>
+
+                    <Link to="/studies">
+                        <GlassCard hoverEffect className="p-4 text-center group border-emerald-500/20 hover:border-emerald-500/50">
+                            <div className="bg-emerald-500/20 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 text-emerald-400 group-hover:scale-110 transition-all">
+                                <BookOpen size={24} />
+                            </div>
+                            <h3 className="font-semibold text-white text-sm">Estudar</h3>
+                        </GlassCard>
+                    </Link>
+
+                    <Link to="/daily-info">
+                        <GlassCard hoverEffect className="p-4 text-center group border-pink-500/20 hover:border-pink-500/50">
+                            <div className="bg-pink-500/20 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 text-pink-400 group-hover:scale-110 transition-all">
+                                <Clock size={24} />
+                            </div>
+                            <h3 className="font-semibold text-white text-sm">Diário</h3>
+                        </GlassCard>
+                    </Link>
+
+                    <Link to="/libertamente">
+                        <GlassCard hoverEffect className="p-4 text-center group border-red-500/20 hover:border-red-500/50">
+                            <div className="bg-red-500/20 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 text-red-400 group-hover:scale-110 transition-all">
+                                <ShieldAlert size={24} />
+                            </div>
+                            <h3 className="font-semibold text-white text-sm">Emergência</h3>
+                        </GlassCard>
+                    </Link>
+                </div>
+            </section>
+
+            {/* Última Conquista */}
+            {data.recentAchievement && (
+                <GlassCard className="p-6 border-neon-purple/30">
+                    <div className="flex items-center gap-4">
+                        <div className="bg-neon-purple/20 w-16 h-16 rounded-full flex items-center justify-center">
+                            <Trophy size={32} className="text-neon-purple" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-400 mb-1">Última Conquista Desbloqueada</p>
+                            <h3 className="text-xl font-bold text-white">{data.recentAchievement.title}</h3>
+                        </div>
+                    </div>
+                </GlassCard>
+            )}
+
+            {/* Módulos Principais */}
+            <section>
+                <h2 className="text-2xl font-bold text-white mb-4">Explorar</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <Link to="/mindfulness">
+                        <GlassCard hoverEffect className="p-6 h-full group border-indigo-500/20 hover:border-indigo-500/50">
+                            <div className="bg-indigo-500/20 w-14 h-14 rounded-2xl flex items-center justify-center mb-4 text-indigo-400 group-hover:scale-110 transition-all shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+                                <Brain size={28} />
+                            </div>
+                            <h3 className="font-bold text-xl mb-2 text-white">Mindfulness</h3>
+                            <p className="text-sm text-gray-400">Meditações e respiração para acalmar a mente.</p>
+                        </GlassCard>
+                    </Link>
+
+                    <Link to="/studies">
+                        <GlassCard hoverEffect className="p-6 h-full group border-emerald-500/20 hover:border-emerald-500/50">
+                            <div className="bg-emerald-500/20 w-14 h-14 rounded-2xl flex items-center justify-center mb-4 text-emerald-400 group-hover:scale-110 transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                                <BookOpen size={28} />
+                            </div>
+                            <h3 className="font-bold text-xl mb-2 text-white">Estudos</h3>
+                            <p className="text-sm text-gray-400">Trilhas de conhecimento personalizadas.</p>
+                        </GlassCard>
+                    </Link>
+
+                    <Link to="/libertamente">
+                        <GlassCard hoverEffect className="p-6 h-full group border-red-500/20 hover:border-red-500/50">
+                            <div className="bg-red-500/20 w-14 h-14 rounded-2xl flex items-center justify-center mb-4 text-red-400 group-hover:scale-110 transition-all shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+                                <ShieldAlert size={28} />
+                            </div>
+                            <h3 className="font-bold text-xl mb-2 text-white">LibertaMente</h3>
+                            <p className="text-sm text-gray-400">Apoio para superação de desafios pessoais.</p>
+                        </GlassCard>
+                    </Link>
+                </div>
+            </section>
+        </div>
+    );
+};
