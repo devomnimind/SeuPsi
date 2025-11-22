@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { User, Moon, Sun, Award, TrendingUp } from 'lucide-react';
+import { User, Moon, Sun, Award, TrendingUp, Users, UserPlus } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { useUserStore } from '../store/useStore';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,6 +11,8 @@ type ProfileData = {
     avatar_url: string;
     level: number;
     xp: number;
+    followers_count: number;
+    following_count: number;
 };
 
 export const Profile = () => {
@@ -30,10 +32,25 @@ export const Profile = () => {
                     .eq('id', user.id)
                     .single();
 
+                // Buscar contadores sociais
+                const { count: followersCount } = await supabase
+                    .from('user_follows')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('following_id', user.id);
+
+                const { count: followingCount } = await supabase
+                    .from('user_follows')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('follower_id', user.id);
+
                 if (error) {
                     console.error('Error fetching profile:', error);
                 } else if (data) {
-                    setProfile(data);
+                    setProfile({
+                        ...data,
+                        followers_count: followersCount || 0,
+                        following_count: followingCount || 0
+                    });
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -67,7 +84,38 @@ export const Profile = () => {
                         )}
                     </div>
                     <h1 className="text-3xl font-bold mb-2 text-white">{profile?.full_name || 'Usuário'}</h1>
-                    <p className="text-gray-400 mb-6">@{profile?.username || 'username'} • Nível {level} • {xp} XP</p>
+                    <p className="text-gray-400 mb-6">@{profile?.username || 'username'}</p>
+
+                    <div className="grid grid-cols-4 gap-4 mb-6">
+                        <div className="bg-white/5 rounded-lg p-3">
+                            <div className="flex items-center  justify-center gap-2 text-neon-purple mb-1">
+                                <TrendingUp size={20} />
+                                <span className="font-bold text-2xl text-white">{level}</span>
+                            </div>
+                            <p className="text-xs text-gray-400 text-center">Nível</p>
+                        </div>
+                        <div className="bg-white/5 rounded-lg p-3">
+                            <div className="flex items-center justify-center gap-2 text-yellow-500 mb-1">
+                                <Award size={20} />
+                                <span className="font-bold text-2xl text-white">{xp}</span>
+                            </div>
+                            <p className="text-xs text-gray-400 text-center">XP</p>
+                        </div>
+                        <div className="bg-white/5 rounded-lg p-3">
+                            <div className="flex items-center justify-center gap-2 text-neon-green mb-1">
+                                <Users size={20} />
+                                <span className="font-bold text-2xl text-white">{profile?.followers_count || 0}</span>
+                            </div>
+                            <p className="text-xs text-gray-400 text-center">Seguidores</p>
+                        </div>
+                        <div className="bg-white/5 rounded-lg p-3">
+                            <div className="flex items-center justify-center gap-2 text-blue-500 mb-1">
+                                <UserPlus size={20} />
+                                <span className="font-bold text-2xl text-white">{profile?.following_count || 0}</span>
+                            </div>
+                            <p className="text-xs text-gray-400 text-center">Seguindo</p>
+                        </div>
+                    </div>
 
                     {/* XP Progress Bar */}
                     <div className="max-w-xs mx-auto mb-6">
