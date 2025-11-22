@@ -11,6 +11,7 @@ import { LibertaMente } from './pages/LibertaMente';
 import { Community } from './pages/Community';
 import { Meta360 } from './pages/Meta360';
 import { Engagement } from './pages/Engagement';
+import { PrivateChat } from './pages/PrivateChat';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 
@@ -52,6 +53,11 @@ function App() {
             <Route path="engagement" element={
               <ProtectedRoute>
                 <Engagement />
+              </ProtectedRoute>
+            } />
+            <Route path="chat" element={
+              <ProtectedRoute>
+                <PrivateChat />
               </ProtectedRoute>
             } />
           </Route>
