@@ -9,6 +9,8 @@ import { DailyInfo } from './pages/DailyInfo';
 import { Profile } from './pages/Profile';
 import { LibertaMente } from './pages/LibertaMente';
 import { Community } from './pages/Community';
+import { Meta360 } from './pages/Meta360';
+import { Engagement } from './pages/Engagement';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 
@@ -40,6 +42,16 @@ function App() {
             <Route path="libertamente" element={
               <ProtectedRoute>
                 <LibertaMente />
+              </ProtectedRoute>
+            } />
+            <Route path="meta360" element={
+              <ProtectedRoute>
+                <Meta360 />
+              </ProtectedRoute>
+            } />
+            <Route path="engagement" element={
+              <ProtectedRoute>
+                <Engagement />
               </ProtectedRoute>
             } />
           </Route>

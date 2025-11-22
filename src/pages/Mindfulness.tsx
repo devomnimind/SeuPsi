@@ -47,8 +47,7 @@ export const Mindfulness = () => {
     const fetchMeditations = async () => {
         const { data, error } = await supabase
             .from('meditations')
-            .select('*')
-            .eq('is_published', true);
+            .select('*');
 
         if (error) console.error('Error fetching meditations:', error);
         else setMeditations(data || []);
