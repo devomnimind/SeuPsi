@@ -15,6 +15,10 @@ import { PrivateChat } from './pages/PrivateChat';
 import { SafetyCenter } from './pages/SafetyCenter';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
+import { AiTherapist } from './pages/AiTherapist';
+
+import { GuardianDashboard } from './components/safety/GuardianDashboard';
+import { EmergencyContactsConfig } from './components/safety/EmergencyContactsConfig';
 
 function App() {
   return (
@@ -28,7 +32,7 @@ function App() {
             <Route index element={<Home />} />
             <Route path="mindfulness" element={<Mindfulness />} />
             <Route path="studies" element={<Studies />} />
-            <Route path="community" element={<Community />} />
+            <Route path="social" element={<Community />} />
 
             {/* Protected Routes */}
             <Route path="daily-info" element={
@@ -64,6 +68,21 @@ function App() {
             <Route path="safety" element={
               <ProtectedRoute>
                 <SafetyCenter />
+              </ProtectedRoute>
+            } />
+            <Route path="ai-therapist" element={
+              <ProtectedRoute>
+                <AiTherapist />
+              </ProtectedRoute>
+            } />
+            <Route path="guardian" element={
+              <ProtectedRoute>
+                <GuardianDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="emergency-contacts" element={
+              <ProtectedRoute>
+                <EmergencyContactsConfig />
               </ProtectedRoute>
             } />
           </Route>

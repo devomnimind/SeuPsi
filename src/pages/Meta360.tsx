@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Target, TrendingUp, Calendar, Award, Plus, CheckCircle } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
+// import { supabase } from '../lib/supabase';
 
 type Goal = {
     id: number;

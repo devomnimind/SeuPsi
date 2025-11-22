@@ -2,10 +2,8 @@ import { useState } from 'react';
 import { Shield, Lock, Users } from 'lucide-react';
 import { GuardianDashboard } from '../components/safety/GuardianDashboard';
 import { EmergencyContactsConfig } from '../components/safety/EmergencyContactsConfig';
-import { useAuth } from '../contexts/AuthContext';
 
 export const SafetyCenter = () => {
-    const { user } = useAuth();
     const [activeTab, setActiveTab] = useState<'guardian' | 'contacts'>('guardian');
 
     return (

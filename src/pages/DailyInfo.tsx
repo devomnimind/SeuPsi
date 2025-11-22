@@ -1,186 +1,191 @@
 import { useEffect, useState } from 'react';
-import { Save, Smile, Frown, Meh, Calendar, Clock } from 'lucide-react';
+import { Save, Smile, Frown, Meh, Clock } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { addXP, updateChallengeProgress, registerActivity, XP_VALUES, CHALLENGE_TYPES } from '../lib/gamification';
+import { useUserStore } from '../store/useStore';
+import { toast } from 'sonner';
 
-type DailyLog = {
-    id: number;
-    mood: string | null;
-    note: string;
-    created_at: string;
+type Mood = 'happy' | 'neutral' | 'sad';
+
+const MOOD_OPTIONS: { value: Mood; label: string; icon: any; color: string }[] = [
+    { value: 'happy', label: 'Bem', icon: Smile, color: 'text-green-400' },
+    { value: 'neutral', label: 'Normal', icon: Meh, color: 'text-yellow-400' },
+    { value: 'sad', label: 'Mal', icon: Frown, color: 'text-red-400' },
+];
+
+const XP_VALUES = {
+    DAILY_CHECKIN: 50,
 };
 
 export const DailyInfo = () => {
     const { user } = useAuth();
-    const [mood, setMood] = useState<string | null>(null);
-    const [note, setNote] = useState('');
-    const [logs, setLogs] = useState<DailyLog[]>([]);
+    const { addXP } = useUserStore();
+    const [mood, setMood] = useState<Mood | null>(null);
+    const [sleepHours, setSleepHours] = useState<number>(7);
+    const [notes, setNotes] = useState('');
     const [loading, setLoading] = useState(false);
+    const [todayEntry, setTodayEntry] = useState<any>(null);
 
     useEffect(() => {
         if (user) {
-            fetchLogs();
+            checkTodayEntry();
         }
     }, [user]);
 
-    const fetchLogs = async () => {
+    const checkTodayEntry = async () => {
         if (!user) return;
 
-        const { data, error } = await supabase
-            .from('daily_logs')
+        const today = new Date().toISOString().split('T')[0];
+
+        const { data } = await supabase
+            .from('daily_checkins')
             .select('*')
             .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(10);
+            .eq('date', today)
+            .single();
 
-        if (error) console.error('Error fetching logs:', error);
-        else setLogs(data || []);
+        if (data) {
+            setTodayEntry(data);
+            setMood(data.mood);
+            setSleepHours(data.sleep_hours);
+            setNotes(data.notes || '');
+        }
     };
 
-    const handleSaveLog = async () => {
-        if (!user || (!mood && !note.trim())) {
-            alert('Por favor, selecione um humor ou escreva uma nota.');
+    const handleSave = async () => {
+        if (!user || !mood) {
+            toast.error('Por favor, selecione como está se sentindo.');
             return;
         }
 
         setLoading(true);
-
         try {
-            const { error } = await supabase
-                .from('daily_logs')
-                .insert([{
-                    user_id: user.id,
-                    mood,
-                    note
-                }]);
+            const today = new Date().toISOString().split('T')[0];
+
+            const entry = {
+                user_id: user.id,
+                date: today,
+                mood,
+                sleep_hours: sleepHours,
+                notes,
+                updated_at: new Date().toISOString()
+            };
+
+            let error;
+
+            if (todayEntry) {
+                const { error: updateError } = await supabase
+                    .from('daily_checkins')
+                    .update(entry)
+                    .eq('id', todayEntry.id);
+                error = updateError;
+            } else {
+                const { error: insertError } = await supabase
+                    .from('daily_checkins')
+                    .insert(entry);
+                error = insertError;
+
+                if (!error) {
+                    if (addXP) addXP(XP_VALUES.DAILY_CHECKIN);
+                    toast.success(`+${XP_VALUES.DAILY_CHECKIN} XP!`);
+                }
+            }
 
             if (error) throw error;
 
-            // Adicionar XP
-            await addXP(user.id, XP_VALUES.MOOD_CHECK, 'mood_check', 'Registro de humor');
-
-            // Registrar atividade para streak
-            await registerActivity(user.id);
-
-            // Atualizar progresso no desafio de mood check
-            const { data: todayChallenge } = await supabase
-                .from('daily_challenges')
-                .select('id')
-                .eq('challenge_type', CHALLENGE_TYPES.MOOD_CHECK)
-                .eq('active_date', new Date().toISOString().split('T')[0])
-                .single();
-
-            if (todayChallenge) {
-                await updateChallengeProgress(user.id, todayChallenge.id);
-            }
-
-            alert(`Registro salvo! +${XP_VALUES.MOOD_CHECK} XP`);
-            setNote('');
-            setMood(null);
-            fetchLogs(); // Refresh list
+            toast.success(todayEntry ? 'Registro atualizado!' : 'Registro salvo!');
+            checkTodayEntry();
         } catch (error) {
-            console.error('Error saving log:', error);
-            alert('Erro ao salvar registro.');
+            console.error('Error saving daily info:', error);
+            toast.error('Erro ao salvar registro.');
         } finally {
             setLoading(false);
         }
     };
 
-    const moodOptions = [
-        { value: 'happy', label: 'Feliz', icon: Smile, color: 'text-green-500' },
-        { value: 'neutral', label: 'Neutro', icon: Meh, color: 'text-yellow-500' },
-        { value: 'sad', label: 'Triste', icon: Frown, color: 'text-red-500' }
-    ];
-
-    const getMoodIcon = (moodValue: string | null) => {
-        const option = moodOptions.find(opt => opt.value === moodValue);
-        if (!option) return null;
-        const Icon = option.icon;
-        return <Icon size={20} className={option.color} />;
-    };
-
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-6 pb-20">
             <header className="mb-8">
-                <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-neon-purple to-neon-green">
-                    Diário
-                </h1>
-                <p className="text-gray-400">Como você está se sentindo hoje?</p>
+                <h1 className="text-3xl font-bold text-white mb-2">Registro Diário</h1>
+                <p className="text-gray-400">Acompanhe seu bem-estar e ganhe XP.</p>
             </header>
 
-            {/* Mood Selection */}
-            <GlassCard>
-                <div className="p-6 space-y-6">
-                    <div>
-                        <h3 className="text-lg font-semibold mb-4 text-white">Como você está se sentindo?</h3>
-                        <div className="grid grid-cols-3 gap-4">
-                            {moodOptions.map(option => {
-                                const Icon = option.icon;
-                                return (
-                                    <button
-                                        key={option.value}
-                                        onClick={() => setMood(option.value)}
-                                        className={`p-4 rounded-xl border-2 transition-all ${mood === option.value
-                                                ? 'border-neon-purple bg-neon-purple/10'
-                                                : 'border-white/10 bg-white/5 hover:border-white/20'
-                                            }`}
-                                    >
-                                        <Icon size={32} className={`mx-auto mb-2 ${option.color}`} />
-                                        <p className="text-sm font-medium text-white">{option.label}</p>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Note Input */}
-                    <div>
-                        <label className="block text-sm font-medium mb-2 text-gray-300">
-                            Escreva sobre seu dia
-                        </label>
-                        <textarea
-                            value={note}
-                            onChange={(e) => setNote(e.target.value)}
-                            placeholder="O que aconteceu hoje que você gostaria de registrar?"
-                            className="w-full h-32 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-neon-purple transition-colors resize-none"
-                        />
-                    </div>
-
-                    <button
-                        onClick={handleSaveLog}
-                        disabled={loading}
-                        className="w-full py-3 bg-neon-purple hover:bg-neon-purple/80 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <Save size={20} />
-                        {loading ? 'Salvando...' : 'Salvar Registro'}
-                    </button>
-                </div>
-            </GlassCard>
-
-            {/* Logs History */}
-            {logs.length > 0 && (
-                <div>
-                    <h3 className="text-xl font-bold text-white mb-4">Registros Anteriores</h3>
-                    <div className="space-y-4">
-                        {logs.map((log) => (
-                            <GlassCard key={log.id} className="p-4">
-                                <div className="flex items-start gap-3">
-                                    {log.mood && getMoodIcon(log.mood)}
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
-                                            <Clock size={14} />
-                                            <span>{new Date(log.created_at).toLocaleString('pt-BR')}</span>
-                                        </div>
-                                        {log.note && <p className="text-gray-200">{log.note}</p>}
-                                    </div>
-                                </div>
-                            </GlassCard>
+            <GlassCard className="p-6 space-y-8">
+                {/* Mood Selection */}
+                <div className="space-y-4">
+                    <label className="block text-sm font-medium text-gray-300">
+                        Como você está se sentindo hoje?
+                    </label>
+                    <div className="grid grid-cols-3 gap-4">
+                        {MOOD_OPTIONS.map((option) => (
+                            <button
+                                key={option.value}
+                                onClick={() => setMood(option.value)}
+                                className={`p-4 rounded-xl border transition-all ${mood === option.value
+                                    ? 'bg-white/10 border-neon-purple scale-105'
+                                    : 'bg-white/5 border-transparent hover:bg-white/10'
+                                    }`}
+                            >
+                                <option.icon
+                                    size={32}
+                                    className={`mx-auto mb-2 ${mood === option.value ? option.color : 'text-gray-400'
+                                        }`}
+                                />
+                                <span className={`block text-center text-sm ${mood === option.value ? 'text-white font-bold' : 'text-gray-400'
+                                    }`}>
+                                    {option.label}
+                                </span>
+                            </button>
                         ))}
                     </div>
                 </div>
-            )}
+
+                {/* Sleep Hours */}
+                <div className="space-y-4">
+                    <label className="block text-sm font-medium text-gray-300">
+                        Horas de sono
+                    </label>
+                    <div className="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/10">
+                        <Clock className="text-neon-purple" />
+                        <input
+                            type="range"
+                            min="0"
+                            max="12"
+                            step="0.5"
+                            value={sleepHours}
+                            onChange={(e) => setSleepHours(parseFloat(e.target.value))}
+                            className="flex-1 accent-neon-purple"
+                        />
+                        <span className="text-xl font-bold text-white w-16 text-right">
+                            {sleepHours}h
+                        </span>
+                    </div>
+                </div>
+
+                {/* Notes */}
+                <div className="space-y-4">
+                    <label className="block text-sm font-medium text-gray-300">
+                        Notas (opcional)
+                    </label>
+                    <textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Como foi seu dia? Algum pensamento importante?"
+                        className="w-full h-32 bg-white/5 border border-white/10 rounded-xl p-4 text-white placeholder-gray-500 focus:outline-none focus:border-neon-purple transition-colors resize-none"
+                    />
+                </div>
+
+                {/* Save Button */}
+                <button
+                    onClick={handleSave}
+                    disabled={loading}
+                    className="w-full py-4 bg-neon-purple hover:bg-neon-purple/80 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2"
+                >
+                    <Save size={24} />
+                    {loading ? 'Salvando...' : (todayEntry ? 'Atualizar Registro' : 'Salvar Registro')}
+                </button>
+            </GlassCard>
         </div>
     );
 };

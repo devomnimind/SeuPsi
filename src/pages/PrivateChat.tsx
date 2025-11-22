@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, MessageCircle, X, ArrowLeft } from 'lucide-react';
+import { Send, MessageCircle, ArrowLeft } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -177,8 +177,8 @@ export const PrivateChat = () => {
                                     key={conv.conversation_id}
                                     onClick={() => setSelectedConversation(conv)}
                                     className={`w-full p-4 flex items-start gap-3 hover:bg-white/5 transition-colors border-b border-white/5 ${selectedConversation?.conversation_id === conv.conversation_id
-                                            ? 'bg-white/10'
-                                            : ''
+                                        ? 'bg-white/10'
+                                        : ''
                                         }`}
                                 >
                                     <div className="relative">
@@ -241,8 +241,8 @@ export const PrivateChat = () => {
                                     >
                                         <div
                                             className={`max-w-[70%] rounded-2xl px-4 py-2 ${isOwn
-                                                    ? 'bg-neon-purple text-white'
-                                                    : 'bg-white/10 text-gray-200'
+                                                ? 'bg-neon-purple text-white'
+                                                : 'bg-white/10 text-gray-200'
                                                 }`}
                                         >
                                             <p className="break-words">{message.content}</p>

@@ -26,7 +26,7 @@ export const AvatarUpload = ({ currentAvatarUrl, onUploadComplete }: Props) => {
             const filePath = `${user?.id}-${Math.random()}.${fileExt}`;
 
             // Upload para o Supabase Storage
-            const { error: uploadError, data } = await supabase.storage
+            const { error: uploadError } = await supabase.storage
                 .from('avatars')
                 .upload(filePath, file, { upsert: true });
 

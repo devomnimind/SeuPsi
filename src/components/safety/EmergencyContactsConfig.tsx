@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Phone, Plus, Trash2, ShieldAlert, Info } from 'lucide-react';
+import { Phone, Plus, Trash2, ShieldAlert } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -256,8 +256,8 @@ export const EmergencyContactsConfig = () => {
 
 const Toggle = ({ label, checked, onChange, warning = false }: { label: string, checked: boolean, onChange: (v: boolean) => void, warning?: boolean }) => (
     <div className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${checked
-            ? (warning ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-neon-purple/10 border-neon-purple/30')
-            : 'bg-white/5 border-white/10'
+        ? (warning ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-neon-purple/10 border-neon-purple/30')
+        : 'bg-white/5 border-white/10'
         }`}>
         <div className="flex items-center gap-2">
             {warning && <AlertTriangle size={16} className="text-yellow-500" />}
@@ -266,8 +266,8 @@ const Toggle = ({ label, checked, onChange, warning = false }: { label: string, 
         <button
             onClick={() => onChange(!checked)}
             className={`w-10 h-5 rounded-full relative transition-colors ${checked
-                    ? (warning ? 'bg-yellow-500' : 'bg-neon-purple')
-                    : 'bg-gray-600'
+                ? (warning ? 'bg-yellow-500' : 'bg-neon-purple')
+                : 'bg-gray-600'
                 }`}
         >
             <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${checked ? 'right-1' : 'left-1'

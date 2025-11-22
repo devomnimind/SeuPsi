@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { User, Moon, Sun, Award, TrendingUp, Users, UserPlus } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
-import { AvatarUpload } from '../components/AvatarUpload';
-import { FriendsManager } from '../components/FriendsManager';
 import { useUserStore } from '../store/useStore';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -22,7 +20,7 @@ export const Profile = () => {
     const { user } = useAuth();
     const [profile, setProfile] = useState<ProfileData | null>(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'info' | 'friends'>('info');
+    // const [activeTab, setActiveTab] = useState<'info' | 'friends'>('info');
 
     useEffect(() => {
         async function getProfile() {

@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Users, MessageSquare, Activity } from 'lucide-react';
+import { Users, MessageSquare, Activity, Mic } from 'lucide-react';
 import { Feed } from '../components/social/Feed';
 import { Chat } from '../components/social/Chat';
+import { AudioSpaces } from '../components/social/AudioSpaces';
 
 export const Community = () => {
-    const [activeTab, setActiveTab] = useState<'feed' | 'chat' | 'groups'>('feed');
+    const [activeTab, setActiveTab] = useState<'feed' | 'chat' | 'audio' | 'groups'>('feed');
 
     return (
         <div className="space-y-8 animate-fade-in pb-20">
@@ -19,8 +20,8 @@ export const Community = () => {
             </header>
 
             {/* Navigation Tabs */}
-            <div className="flex justify-center">
-                <div className="bg-white/5 backdrop-blur-md p-1 rounded-2xl border border-white/10 inline-flex">
+            <div className="flex justify-center overflow-x-auto px-4">
+                <div className="bg-white/5 backdrop-blur-md p-1 rounded-2xl border border-white/10 inline-flex whitespace-nowrap">
                     <button
                         onClick={() => setActiveTab('feed')}
                         className={`
@@ -45,6 +46,19 @@ export const Community = () => {
                     >
                         <MessageSquare size={20} />
                         <span>Chat</span>
+                    </button>
+
+                    <button
+                        onClick={() => setActiveTab('audio')}
+                        className={`
+              px-6 py-3 rounded-xl flex items-center gap-2 transition-all duration-300
+              ${activeTab === 'audio'
+                                ? 'bg-neon-purple text-white shadow-neon'
+                                : 'text-gray-400 hover:text-white hover:bg-white/5'}
+            `}
+                    >
+                        <Mic size={20} />
+                        <span>Áudio</span>
                     </button>
 
                     <button
@@ -73,6 +87,12 @@ export const Community = () => {
                 {activeTab === 'chat' && (
                     <div className="animate-fade-in max-w-4xl mx-auto">
                         <Chat />
+                    </div>
+                )}
+
+                {activeTab === 'audio' && (
+                    <div className="animate-fade-in max-w-4xl mx-auto">
+                        <AudioSpaces />
                     </div>
                 )}
 

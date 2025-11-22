@@ -1,106 +1,38 @@
-import { useEffect, useState } from 'react';
-import { Brain, BookOpen, ShieldAlert, Target, Flame, Trophy, TrendingUp, Clock, Play } from 'lucide-react';
+import { useState } from 'react';
+import { Brain, BookOpen, ShieldAlert, Target, Flame, Trophy, TrendingUp, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
-import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
-
-type DashboardData = {
-    userName: string;
-    level: number;
-    xp: number;
-    currentStreak: number;
-    todayChallenges: {
-        id: number;
-        title: string;
-        current_progress: number;
-        target_value: number;
-        completed: boolean;
-    }[];
-    recentAchievement?: {
-        title: string;
-        icon: string;
-    };
-};
+import { useDashboardData } from '../hooks/useDashboardData';
 
 export const Home = () => {
-    const { user } = useAuth();
-    const [data, setData] = useState<DashboardData>({
-        userName: 'Viajante',
-        level: 1,
-        xp: 0,
-        currentStreak: 0,
-        todayChallenges: [],
-    });
-    const [loading, setLoading] = useState(true);
+    const { data, loading, refresh } = useDashboardData();
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [startY, setStartY] = useState(0);
+    const [pullDistance, setPullDistance] = useState(0);
 
-    useEffect(() => {
-        if (user) {
-            fetchDashboardData();
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if (window.scrollY === 0) {
+            setStartY(e.touches[0].clientY);
         }
-    }, [user]);
+    };
 
-    const fetchDashboardData = async () => {
-        if (!user) return;
-
-        try {
-            // Buscar perfil do usuário
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('full_name, level, xp')
-                .eq('id', user.id)
-                .single();
-
-            // Buscar streak
-            const { data: streak } = await supabase
-                .from('user_streaks')
-                .select('current_streak')
-                .eq('user_id', user.id)
-                .single();
-
-            // Buscar desafios de hoje
-            const { data: challenges } = await supabase
-                .from('daily_challenges')
-                .select('id, title, target_value, xp_reward')
-                .eq('active_date', new Date().toISOString().split('T')[0]);
-
-            // Buscar progresso nos desafios
-            const { data: userChallenges } = await supabase
-                .from('user_challenges')
-                .select('challenge_id, current_progress, completed')
-                .eq('user_id', user.id);
-
-            // Combinar dados
-            const challengesWithProgress = challenges?.map(c => ({
-                ...c,
-                current_progress: userChallenges?.find(uc => uc.challenge_id === c.id)?.current_progress || 0,
-                completed: userChallenges?.find(uc => uc.challenge_id === c.id)?.completed || false
-            })) || [];
-
-            // Buscar última conquista
-            const { data: recentAchievement } = await supabase
-                .from('user_achievements')
-                .select('achievement_id, achievements(title, icon)')
-                .eq('user_id', user.id)
-                .order('unlocked_at', { ascending: false })
-                .limit(1)
-                .single();
-
-            setData({
-                userName: profile?.full_name?.split(' ')[0] || 'Viajante',
-                level: profile?.level || 1,
-                xp: profile?.xp || 0,
-                currentStreak: streak?.current_streak || 0,
-                todayChallenges: challengesWithProgress,
-                recentAchievement: recentAchievement?.achievements
-                    ? { title: (recentAchievement.achievements as any).title, icon: (recentAchievement.achievements as any).icon }
-                    : undefined
-            });
-        } catch (error) {
-            console.error('Error fetching dashboard data:', error);
-        } finally {
-            setLoading(false);
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (startY > 0 && window.scrollY === 0) {
+            const currentY = e.touches[0].clientY;
+            const distance = Math.max(0, currentY - startY);
+            // Add resistance
+            setPullDistance(Math.min(distance * 0.4, 80));
         }
+    };
+
+    const handleTouchEnd = async () => {
+        if (pullDistance > 60) {
+            setIsRefreshing(true);
+            await refresh();
+            setIsRefreshing(false);
+        }
+        setStartY(0);
+        setPullDistance(0);
     };
 
     const getGreeting = () => {
@@ -113,12 +45,29 @@ export const Home = () => {
     const nextLevelXp = data.level * 100;
     const xpProgress = (data.xp / nextLevelXp) * 100;
 
-    if (loading) {
+    if (loading && !isRefreshing) {
         return <div className="text-center text-white mt-10">Carregando...</div>;
     }
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div
+            className="space-y-6 animate-fade-in relative"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+        >
+            {/* Pull to Refresh Indicator */}
+            {pullDistance > 0 && (
+                <div
+                    className="absolute left-0 right-0 flex justify-center items-center z-50 pointer-events-none"
+                    style={{ top: `${pullDistance - 40}px`, opacity: pullDistance / 60 }}
+                >
+                    <div className="bg-neon-purple p-2 rounded-full shadow-lg shadow-neon-purple/50">
+                        <div className={`w-6 h-6 border-2 border-white border-t-transparent rounded-full ${isRefreshing ? 'animate-spin' : ''}`} />
+                    </div>
+                </div>
+            )}
+
             {/* Header com saudação */}
             <section className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-neon-purple to-neon-green opacity-20 blur-3xl rounded-full"></div>

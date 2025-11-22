@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Brain, BookOpen, User, ShieldAlert, FileText, Users, Menu, X, LogIn, LogOut, Target, Trophy, MessageSquare, Shield } from 'lucide-react';
+import { Home, Brain, BookOpen, User, UserCheck, ShieldAlert, FileText, Users, Menu, X, LogIn, LogOut, Target, Trophy, MessageSquare, Shield } from 'lucide-react';
 import { GlassCard } from './ui/GlassCard';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -20,10 +20,12 @@ export const Layout = () => {
     };
 
     const navItems: NavItem[] = [
-        { path: '/', icon: <Home size={20} />, label: 'Home' },
-        { path: '/mindfulness', icon: <Brain size={20} />, label: 'Mindfulness' },
+        { path: '/', icon: <Home size={20} />, label: 'Início' },
+        { path: '/ai-therapist', icon: <Brain size={20} />, label: 'IA Terapeuta' },
+        { path: '/social', icon: <Users size={20} />, label: 'Social' },
         { path: '/studies', icon: <BookOpen size={20} />, label: 'Estudos' },
-        { path: '/community', icon: <Users size={20} />, label: 'Comunidade' },
+        { path: '/libertamente', icon: <ShieldAlert size={20} />, label: 'LibertaMente' },
+        { path: '/guardian', icon: <UserCheck size={20} />, label: 'Responsáveis' },
     ];
 
     const protectedItems: NavItem[] = [
@@ -61,12 +63,13 @@ export const Layout = () => {
                                 key={item.path}
                                 to={item.path}
                                 className={`
-                                    px-4 py-2 rounded-xl flex items-center gap-2 transition-all duration-300
+px - 4 py - 2 rounded - xl flex items - center gap - 2 transition - all duration - 300
                                     ${isActive(item.path)
                                         ? 'bg-white/10 text-white shadow-neon'
-                                        : 'text-gray-400 hover:text-white hover:bg-white/5'}
+                                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                    }
                                     ${item.className || ''}
-                                `}
+`}
                             >
                                 {item.icon}
                                 <span className="font-medium">{item.label}</span>
@@ -112,12 +115,13 @@ export const Layout = () => {
                                 to={item.path}
                                 onClick={() => setIsMobileMenuOpen(false)}
                                 className={`
-                                    p-4 rounded-xl flex items-center gap-4 transition-all duration-300
+p - 4 rounded - xl flex items - center gap - 4 transition - all duration - 300
                                     ${isActive(item.path)
                                         ? 'bg-neon-purple/20 text-white border border-neon-purple/50'
-                                        : 'text-gray-400 hover:bg-white/5 hover:text-white'}
+                                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                    }
                                     ${item.className || ''}
-                                `}
+`}
                             >
                                 {item.icon}
                                 <span className="font-medium text-lg">{item.label}</span>
@@ -160,7 +164,7 @@ export const Layout = () => {
                     <Link
                         key={item.path}
                         to={item.path}
-                        className={`p-2 rounded-xl transition-colors ${isActive(item.path) ? 'text-neon-purple bg-white/5' : 'text-gray-400'}`}
+                        className={`p - 2 rounded - xl transition - colors ${isActive(item.path) ? 'text-neon-purple bg-white/5' : 'text-gray-400'} `}
                     >
                         {item.icon}
                     </Link>
