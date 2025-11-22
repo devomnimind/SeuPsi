@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Brain, BookOpen, User, ShieldAlert, FileText, Users, Menu, X, LogIn, LogOut, Target, Trophy, MessageSquare } from 'lucide-react';
+import { Home, Brain, BookOpen, User, ShieldAlert, FileText, Users, Menu, X, LogIn, LogOut, Target, Trophy, MessageSquare, Shield } from 'lucide-react';
 import { GlassCard } from './ui/GlassCard';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -31,6 +31,7 @@ export const Layout = () => {
         { path: '/chat', icon: <MessageSquare size={20} />, label: 'Chat' },
         { path: '/meta360', icon: <Target size={20} />, label: 'Meta360' },
         { path: '/engagement', icon: <Trophy size={20} />, label: 'Engajamento' },
+        { path: '/safety', icon: <Shield size={20} />, label: 'Segurança' },
         { path: '/libertamente', icon: <ShieldAlert size={20} />, label: 'LibertaMente', className: 'text-red-500 hover:text-red-400' },
         { path: '/profile', icon: <User size={20} />, label: 'Perfil' },
     ];
