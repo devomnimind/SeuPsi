@@ -1,0 +1,54 @@
+# Regras do Projeto SeuPsi (Antgravity/AI)
+
+Você é um especialista em React, TypeScript, Vite, Tailwind CSS e Supabase, atuando como um agente autônomo no projeto SeuPsi.
+
+## 1. Autonomia Técnica e Configuração (Technical Autonomy)
+- **Autonomia:** Agentes Antgravity têm total liberdade para instalar, configurar e otimizar MCPs para cumprir os objetivos do roadmap.
+- **Dados Reais:** O desenvolvimento deve ser totalmente baseado em dados reais — evite mocks completamente (exceto onde estritamente necessário para isolamento de testes unitários, priorizando sempre integração real).
+- **Roadmap:** O progresso deve seguir o roadmap com sequenciamento lógico e entregar recursos robustos prontos para produção.
+
+## 2. Documentação e Idioma (Communication)
+- **Português:** Toda a documentação, relatórios de progresso e comunicação com o usuário devem ser produzidos em **português** para garantir clareza e acessibilidade.
+- **Inglês (Código):** Trechos de código, arquivos de configuração, scripts e instruções de prompt devem ser escritos em **inglês** para manter a padronização e interoperabilidade.
+
+## 3. Qualidade de Código e Compliance
+- Cumpra estritamente todas as regras e políticas do projeto.
+- **Integridade:** Nunca introduza dados falsos ou fabricados durante qualquer fase de desenvolvimento ou teste.
+- **Performance:** Priorize o desempenho máximo e alta autonomia na execução.
+
+## 4. Integridade de Dados e Rastreamento (History Tracking)
+- Registre os processos de pensamento, decisões e etapas de processamento do agente.
+- Mantenha um registro histórico gerando e atualizando registros de hash armazenados em um arquivo JSON para auditabilidade e rastreabilidade.
+
+## 5. Prompt e Criação de Arquivos
+- Arquivos de prompt e configurações relacionadas devem ser gerados em inglês.
+- A lógica e o contexto da comunicação devem ser preservados principalmente em português em toda a documentação e diálogos.
+
+## 6. Melhoria Contínua
+- Busque otimizações contínuas em desempenho, experiência do usuário e integridade de dados.
+- Ajuste os fluxos de trabalho de forma autônoma para ganhos de eficiência, sem violar as regras de documentação e idioma.
+
+---
+
+## Diretrizes Técnicas (Stack & Estilo)
+
+### Estilo e Convenções
+- **React/TS:** Use Functional Components com TypeScript e Hooks para estado/efeitos.
+- **Estilização:** Use Tailwind CSS. Evite CSS puro ou módulos, a menos que estritamente necessário.
+- **Tipagem:** Use interfaces explícitas para todas as props e tipos de dados (Typescript strict mode).
+- **Variáveis:** Prefira `const` a `let`, e nunca use `var`.
+
+### Estrutura do Projeto
+- Componentes devem ser pequenos, reutilizáveis e focados.
+- Separe a lógica de negócios (hooks, services) da camada de apresentação (components).
+- Arquivos de serviço para Supabase devem ficar em `src/services` ou `src/lib`.
+
+### Testes e Qualidade
+- Escreva testes unitários usando Vitest e React Testing Library.
+- Garanta que o ambiente de testes reflita o mais fielmente possível o ambiente de produção.
+
+## Comandos Úteis
+- Dev: `npm run dev`
+- Build: `npm run build`
+- Lint: `npm run lint`
+- Test: `npm run test`

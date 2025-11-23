@@ -1,3 +1,4 @@
+import { LocalLlmService } from '../lib/LocalLlmService';
 import { VectorService } from './VectorService';
 
 export type Question = {
@@ -18,90 +19,65 @@ export type StudySchedule = {
 };
 
 export const StudyGenerator = {
-    generateQuestions: async (topic: string): Promise<Question[]> => {
+    generateQuestions: async (topic: string, count: number = 3): Promise<Question[]> => {
         console.log(`Buscando material de estudo para: ${topic}`);
-        const contextResults = await VectorService.search(topic, 5);
-        
-        // Mock response for now
-        // Em produção, usaria contextResults para gerar o prompt
-        console.log('Contexto encontrado:', contextResults.length);
-        /*
-        const systemPrompt = `
-            Você é um professor especialista.
-            Crie ${count} questões de múltipla escolha sobre: "${topic}".
-            
-            Use este MATERIAL DE REFERÊNCIA se relevante:
-            ---
-            ${contextText}
-            ---
-            
-            Retorne APENAS um JSON válido no seguinte formato, sem markdown:
-            [
-                {
-                    "id": "1",
-                    "text": "Enunciado da questão...",
-                    "options": ["Opção A", "Opção B", "Opção C", "Opção D"],
-                    "correctAnswer": 0,
-                    "explanation": "Explicação breve do porquê a A está correta."
-                }
-            ]
-        `;
-        */
+        // Busca contexto real (se disponível) ou usa string vazia
+        const contextResults = await VectorService.search(topic, 3);
+        const contextText = contextResults.map(r => r.content).join('\n');
 
-        // Mock response for now
-        return [
-            {
-                id: '1',
-                text: `Qual é o principal conceito relacionado a ${topic}?`,
-                options: [
-                    `Conceito A sobre ${topic}`,
-                    'Conceito B totalmente errado',
-                    'Conceito C irrelevante',
-                    'Conceito D confuso'
-                ],
-                correctAnswer: 0,
-                explanation: `O Conceito A é fundamental para entender ${topic} porque... (baseado no contexto recuperado).`
-            },
-            {
-                id: '2',
-                text: 'Como isso se aplica na prática?',
-                options: [
-                    'Não se aplica',
-                    'Apenas na teoria',
-                    `Aplica-se diretamente em casos de ${topic}`,
-                    'Nenhuma das anteriores'
-                ],
-                correctAnswer: 2,
-                explanation: 'A aplicação prática é vasta e inclui...'
+        console.log('Gerando questões via IA Local...');
+
+        const prompt = `Instruction: Create ${count} multiple choice questions about "${topic}" in Portuguese.
+        Context: ${contextText.substring(0, 500)}
+        Format: Return ONLY a valid JSON array of objects with fields: id (string), text (string question), options (array of 4 strings), correctAnswer (number index 0-3), explanation (string).
+        Example: [{"id":"1", "text":"Q?", "options":["A","B","C","D"], "correctAnswer":0, "explanation":"Exp"}]
+        JSON:`;
+
+        try {
+            const responseText = await LocalLlmService.generate(prompt, 500);
+            // Tentativa robusta de extrair JSON da resposta da IA
+            const jsonMatch = responseText.match(/\[.*\]/s);
+            if (jsonMatch) {
+                return JSON.parse(jsonMatch[0]);
             }
-        ];
+            throw new Error("No JSON found in response");
+        } catch (error) {
+            console.error("Erro na geração de questões:", error);
+            // Fallback de emergência apenas se a IA falhar totalmente na formatação
+            // Mas ainda tentando ser dinâmico
+            return [{
+                id: 'error-1',
+                text: `Não foi possível gerar questões sobre ${topic} agora. Tente novamente.`,
+                options: ["Erro", "Tentar de novo", "Verificar conexão", "Aguardar"],
+                correctAnswer: 1,
+                explanation: "Ocorreu uma falha no processamento da IA local."
+            }];
+        }
     },
 
     async generateSchedule(goal: string, availableTime: string): Promise<StudySchedule> {
-        // RAG search for study techniques or specific content
-        // const contextResults = await VectorService.search(goal, 3);
         console.log(`Gerando cronograma para: ${goal}`);
         
-        // Mock response
-        return {
-            title: `Plano de Estudos: ${goal}`,
-            days: [
-                {
-                    day: 'Segunda-feira',
-                    topics: [`Introdução a ${goal}`, 'Conceitos Básicos', 'Leitura do Material'],
-                    duration: availableTime
-                },
-                {
-                    day: 'Terça-feira',
-                    topics: ['Aprofundamento Prático', 'Resolução de Exercícios', 'Revisão'],
-                    duration: availableTime
-                },
-                {
-                    day: 'Quarta-feira',
-                    topics: ['Tópicos Avançados', 'Simulado Rápido', 'Análise de Erros'],
-                    duration: availableTime
-                }
-            ]
-        };
+        const prompt = `Instruction: Create a 3-day study schedule for "${goal}" with ${availableTime} available per day. Language: Portuguese.
+        Format: Return ONLY a valid JSON object with fields: title (string), days (array of objects with day (string), topics (array strings), duration (string)).
+        Example: {"title":"Plano", "days":[{"day":"Segunda", "topics":["A"], "duration":"1h"}]}
+        JSON:`;
+
+        try {
+            const responseText = await LocalLlmService.generate(prompt, 400);
+            const jsonMatch = responseText.match(/\{.*\}/s);
+            if (jsonMatch) {
+                return JSON.parse(jsonMatch[0]);
+            }
+            throw new Error("No JSON found");
+        } catch (error) {
+            console.error("Erro na geração de cronograma:", error);
+            return {
+                title: `Plano de Estudos: ${goal}`,
+                days: [
+                    { day: 'Hoje', topics: ['Revisão Geral', 'Foco nos Fundamentos'], duration: availableTime }
+                ]
+            };
+        }
     }
 };

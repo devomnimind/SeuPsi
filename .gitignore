@@ -72,3 +72,10 @@ config/production.js
 
 # Documentation (keep example files)
 PORT_CONFLICT_RESOLUTION.md
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/

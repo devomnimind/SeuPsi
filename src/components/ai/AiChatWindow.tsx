@@ -92,7 +92,7 @@ export const AiChatWindow = () => {
         if (!input.trim() || !user || sending) return;
 
         // Moderação
-        const moderation = ModerationService.analyzeText(input);
+        const moderation = await ModerationService.analyzeText(input);
         if (!moderation.isSafe) {
             toast.error('Sua mensagem contém termos inadequados. Por favor, reformule.');
             return;

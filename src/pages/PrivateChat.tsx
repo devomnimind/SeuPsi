@@ -134,7 +134,7 @@ export const PrivateChat = () => {
         if (!user || !selectedConversation || !newMessage.trim()) return;
 
         // Moderação
-        const moderation = ModerationService.analyzeText(newMessage);
+        const moderation = await ModerationService.analyzeText(newMessage);
         if (!moderation.isSafe) {
             toast.error('Mensagem bloqueada por conter termos inadequados.');
             return;
