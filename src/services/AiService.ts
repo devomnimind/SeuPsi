@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { LocalLlmService } from '../lib/LocalLlmService';
+import { VectorService } from './VectorService';
 
 export type TherapyMode = 'tcc' | 'psicanalise' | 'gestalt' | 'psicodrama';
 
@@ -16,6 +17,7 @@ export type Session = {
     updated_at: string;
     summary?: string;
     therapy_mode: TherapyMode;
+    user_id: string;
 };
 
 export const AiService = {
@@ -59,8 +61,18 @@ export const AiService = {
         return data;
     },
 
-    // Enviar mensagem e obter resposta (REAL com Local LLM)
+    // Enviar mensagem e obter resposta (REAL com RAG + Local LLM)
     async sendMessage(sessionId: string, content: string, mode: TherapyMode = 'tcc') {
+        // 0. Buscar dados da sessão para obter user_id
+        const { data: session } = await supabase
+            .from('ai_chat_sessions')
+            .select('user_id')
+            .eq('id', sessionId)
+            .single();
+            
+        if (!session) throw new Error("Sessão não encontrada");
+        const userId = session.user_id;
+
         // 1. Salvar mensagem do usuário
         const { error: userMsgError } = await supabase
             .from('ai_chat_messages')
@@ -72,7 +84,15 @@ export const AiService = {
 
         if (userMsgError) throw userMsgError;
 
-        // 2. Preparar Prompt para o LLM com Persona Terapêutica
+        // 2. RAG: Buscar contexto relevante na memória de longo prazo
+        console.log("Buscando memórias relevantes...");
+        const memories = await VectorService.search(userId, content, 2);
+        const memoryContext = memories.length > 0 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ? "\nMemórias Relevantes (Contexto Passado):\n" + memories.map((m: any) => `- ${m.content}`).join("\n")
+            : "";
+
+        // 3. Preparar Prompt para o LLM com Persona Terapêutica e Contexto
         let systemInstruction = "";
         switch (mode) {
             case 'psicanalise':
@@ -91,9 +111,12 @@ export const AiService = {
                 systemInstruction = "You are a empathetic AI Therapist. Listen actively and provide support in Portuguese.";
         }
 
-        const fullPrompt = `Instruction: ${systemInstruction}\nUser: ${content}\nTherapist:`;
+        const fullPrompt = `Instruction: ${systemInstruction}
+        ${memoryContext}
+        User: ${content}
+        Therapist:`;
 
-        // 3. Gerar resposta real via LLM Local
+        // 4. Gerar resposta real via LLM Local
         let aiResponse = "";
         try {
             // Gerar resposta (max 150 tokens para ser rápido)
@@ -108,7 +131,7 @@ export const AiService = {
             aiResponse = "Estou tendo dificuldade em processar isso agora. Podemos tentar reformular?";
         }
 
-        // 4. Salvar resposta da IA
+        // 5. Salvar resposta da IA no banco
         const { data: aiMsg, error: aiMsgError } = await supabase
             .from('ai_chat_messages')
             .insert({
@@ -120,6 +143,12 @@ export const AiService = {
             .single();
 
         if (aiMsgError) throw aiMsgError;
+
+        // 6. Memória: Salvar este turno de conversa no Vector Store (em background)
+        // Não bloqueamos a resposta para o usuário
+        const memoryContent = `User: ${content}\nAI: ${aiResponse}`;
+        VectorService.saveMemory(userId, memoryContent, { sessionId, mode });
+
         return aiMsg;
     }
 };

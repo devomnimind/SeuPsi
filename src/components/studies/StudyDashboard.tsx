@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Calendar, CheckCircle, Brain, ArrowRight } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
+import { useAuth } from '../../contexts/AuthContext';
 import { StudyGenerator, type Question, type StudySchedule } from '../../services/StudyGenerator';
 import { toast } from 'sonner';
 
 export const StudyDashboard = () => {
+    const { user } = useAuth();
     const [mode, setMode] = useState<'menu' | 'quiz' | 'schedule'>('menu');
     const [topic, setTopic] = useState('');
     const [loading, setLoading] = useState(false);
@@ -22,7 +24,7 @@ export const StudyDashboard = () => {
         if (!topic.trim()) return;
         setLoading(true);
         try {
-            const data = await StudyGenerator.generateQuestions(topic);
+            const data = await StudyGenerator.generateQuestions(topic, user?.id);
             setQuestions(data);
             setMode('quiz');
             setCurrentQuestion(0);

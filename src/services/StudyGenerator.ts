@@ -19,11 +19,15 @@ export type StudySchedule = {
 };
 
 export const StudyGenerator = {
-    generateQuestions: async (topic: string, count: number = 3): Promise<Question[]> => {
+    generateQuestions: async (topic: string, userId?: string, count: number = 3): Promise<Question[]> => {
         console.log(`Buscando material de estudo para: ${topic}`);
         // Busca contexto real (se disponível) ou usa string vazia
-        const contextResults = await VectorService.search(topic, 3);
-        const contextText = contextResults.map(r => r.content).join('\n');
+        let contextText = "";
+        if (userId) {
+            const contextResults = await VectorService.search(userId, topic, 3);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            contextText = contextResults.map((r: any) => r.content).join('\n');
+        }
 
         console.log('Gerando questões via IA Local...');
 

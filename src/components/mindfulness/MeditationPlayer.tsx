@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { Play, Pause, Sparkles, Wand2 } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
 import { MeditationGenerator } from '../../services/MeditationGenerator';
+import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
 
 export const MeditationPlayer = () => {
+    const { user } = useAuth();
     const [topic, setTopic] = useState('');
     const [script, setScript] = useState('');
     const [loading, setLoading] = useState(false);
@@ -14,7 +16,7 @@ export const MeditationPlayer = () => {
         if (!topic.trim()) return;
         setLoading(true);
         try {
-            const generatedScript = await MeditationGenerator.generateMeditation(topic);
+            const generatedScript = await MeditationGenerator.generateMeditation(topic, user?.id);
             setScript(generatedScript);
             toast.success('Meditação gerada com sucesso!');
         } catch (error) {
