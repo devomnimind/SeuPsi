@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Bot, User, Plus, Loader2, Brain, Sparkles, Theater, Sofa } from 'lucide-react';
+import { Send, Bot, User, Plus, Loader2, Brain, Sparkles, Theater, Sofa, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { AiService, type Message, type Session, type TherapyMode } from '../../services/AiService';
 import { ModerationService } from '../../services/ModerationService';
 import { toast } from 'sonner';
+import { useVoiceInteraction } from '../../hooks/useVoiceInteraction';
 
 export const AiChatWindow = () => {
     const { user } = useAuth();
@@ -16,7 +17,17 @@ export const AiChatWindow = () => {
     const [loading, setLoading] = useState(false);
     const [sending, setSending] = useState(false);
     const [showNewChatModal, setShowNewChatModal] = useState(false);
+    const [audioEnabled, setAudioEnabled] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    const { isListening, isSpeaking, startListening, stopListening, speak, cancelSpeech, transcript } = useVoiceInteraction({
+        onTranscript: (text) => setInput(text)
+    });
+
+    // Update input when transcript changes (redundant with onTranscript but safe)
+    useEffect(() => {
+        if (transcript) setInput(transcript);
+    }, [transcript]);
 
 
 
@@ -129,6 +140,11 @@ export const AiChatWindow = () => {
                 const aiMsg = await AiService.sendMessage(sessionId, content, mode);
                 // Update with real AI response
                 setMessages(prev => [...prev, aiMsg]);
+                
+                // Speak response if audio enabled
+                if (audioEnabled) {
+                    speak(aiMsg.content);
+                }
             }
 
         } catch (error) {
@@ -205,9 +221,21 @@ export const AiChatWindow = () => {
 
                 {/* Desktop Header (Active Mode) */}
                 {currentSession && (
-                    <div className="hidden md:flex p-3 border-b border-white/10 items-center gap-2 text-gray-300 bg-black/20">
-                        <span className="text-neon-purple">{getModeIcon(currentSession.therapy_mode)}</span>
-                        <span className="text-sm font-medium">Modo: {getModeName(currentSession.therapy_mode)}</span>
+                    <div className="hidden md:flex p-3 border-b border-white/10 items-center justify-between gap-2 text-gray-300 bg-black/20">
+                        <div className="flex items-center gap-2">
+                            <span className="text-neon-purple">{getModeIcon(currentSession.therapy_mode)}</span>
+                            <span className="text-sm font-medium">Modo: {getModeName(currentSession.therapy_mode)}</span>
+                        </div>
+                        <button 
+                            onClick={() => {
+                                setAudioEnabled(!audioEnabled);
+                                if (audioEnabled) cancelSpeech();
+                            }}
+                            className={`p-2 rounded-full hover:bg-white/10 transition-colors ${audioEnabled ? 'text-neon-green' : 'text-gray-500'} ${isSpeaking ? 'animate-pulse' : ''}`}
+                            title={audioEnabled ? "Desativar voz" : "Ativar voz"}
+                        >
+                            {audioEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+                        </button>
                     </div>
                 )}
 
@@ -268,13 +296,25 @@ export const AiChatWindow = () => {
 
                 {/* Input Area */}
                 <div className="p-4 border-t border-white/10 bg-black/20">
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center">
+                        <button
+                            onClick={isListening ? stopListening : startListening}
+                            className={`p-3 rounded-xl transition-all ${
+                                isListening 
+                                ? 'bg-red-500/20 text-red-500 animate-pulse border border-red-500' 
+                                : 'bg-white/5 hover:bg-white/10 text-gray-400 border border-white/10'
+                            }`}
+                            title="Falar"
+                        >
+                            {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+                        </button>
+
                         <input
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                            placeholder="Digite sua mensagem..."
+                            placeholder={isListening ? "Ouvindo..." : "Digite sua mensagem..."}
                             className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-neon-purple transition-colors"
                             disabled={sending}
                         />
