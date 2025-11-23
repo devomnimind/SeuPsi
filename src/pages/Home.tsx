@@ -43,7 +43,7 @@ export const Home = () => {
     };
 
     const nextLevelXp = data.level * 100;
-    const xpProgress = (data.xp / nextLevelXp) * 100;
+    const xpProgress = (data.currentXP / nextLevelXp) * 100;
 
     if (loading && !isRefreshing) {
         return <div className="text-center text-white mt-10">Carregando...</div>;
@@ -85,7 +85,7 @@ export const Home = () => {
                                     <TrendingUp size={20} className="text-neon-purple" />
                                     <span className="text-sm text-gray-400">Nível</span>
                                 </div>
-                                <p className="text-2xl font-bold text-white">{data.level}</p>
+                                <p className="text-sm font-medium text-gray-300">Nível {data.level} • {data.currentXP} XP</p>
                                 <div className="mt-2">
                                     <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
                                         <div
@@ -93,7 +93,7 @@ export const Home = () => {
                                             style={{ width: `${xpProgress}%` }}
                                         ></div>
                                     </div>
-                                    <p className="text-xs text-gray-500 mt-1">{data.xp}/{nextLevelXp} XP</p>
+                                    <p className="text-xs text-gray-500 mt-1">{data.currentXP}/{nextLevelXp} XP</p>
                                 </div>
                             </div>
 
@@ -102,7 +102,7 @@ export const Home = () => {
                                     <Flame size={20} className="text-orange-500" />
                                     <span className="text-sm text-gray-400">Sequência</span>
                                 </div>
-                                <p className="text-2xl font-bold text-white">{data.currentStreak} dias</p>
+                                <p className="text-2xl font-bold text-white">{data.streakDays} dias</p>
                                 <p className="text-xs text-gray-500 mt-1">Continue assim!</p>
                             </div>
 
@@ -112,10 +112,12 @@ export const Home = () => {
                                     <span className="text-sm text-gray-400">Desafios Hoje</span>
                                 </div>
                                 <p className="text-2xl font-bold text-white">
-                                    {data.todayChallenges.filter(c => c.completed).length}/{data.todayChallenges.length}
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    {data.dailyChallenges.filter((c: any) => c.completed).length}/{data.dailyChallenges.length}
                                 </p>
                                 <p className="text-xs text-gray-500 mt-1">
-                                    {data.todayChallenges.filter(c => c.completed).length === data.todayChallenges.length
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                    {data.dailyChallenges.filter((c: any) => c.completed).length === data.dailyChallenges.length
                                         ? 'Todos completos!'
                                         : 'Vamos lá!'}
                                 </p>
@@ -126,11 +128,12 @@ export const Home = () => {
             </section>
 
             {/* Desafios de Hoje */}
-            {data.todayChallenges.length > 0 && (
+            {data.dailyChallenges.length > 0 && (
                 <section>
                     <h2 className="text-2xl font-bold text-white mb-4">Desafios de Hoje</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {data.todayChallenges.map(challenge => (
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {data.dailyChallenges.map((challenge: any) => (
                             <GlassCard key={challenge.id} className={`p-4 ${challenge.completed ? 'border-neon-green' : ''}`}>
                                 <div className="flex items-center justify-between mb-2">
                                     <h3 className="font-semibold text-white">{challenge.title}</h3>
@@ -249,3 +252,5 @@ export const Home = () => {
         </div>
     );
 };
+
+export default Home;

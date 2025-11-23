@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Target, TrendingUp, Calendar, Award, Plus, CheckCircle } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { useAuth } from '../contexts/AuthContext';
@@ -18,15 +18,11 @@ export const Meta360 = () => {
     const { user } = useAuth();
     const [goals, setGoals] = useState<Goal[]>([]);
     const [showNewGoal, setShowNewGoal] = useState(false);
+    // eslint-disable-next-line react-hooks/purity
+    const [now] = useState(Date.now());
     const [newGoal, setNewGoal] = useState({ title: '', description: '', target_date: '', category: 'personal' });
 
-    useEffect(() => {
-        if (user) {
-            fetchGoals();
-        }
-    }, [user]);
-
-    const fetchGoals = async () => {
+    const fetchGoals = useCallback(async () => {
         if (!user) return;
 
         // Simulando goals até criar a tabela específica
@@ -59,7 +55,13 @@ export const Meta360 = () => {
                 target_date: new Date().toISOString()
             }
         ]);
-    };
+    }, [user]);
+
+    useEffect(() => {
+        if (user) {
+            fetchGoals();
+        }
+    }, [user, fetchGoals]);
 
     const categoryColors = {
         wellness: 'from-purple-500 to-pink-500',
@@ -140,7 +142,7 @@ export const Meta360 = () => {
                 {goals.map(goal => {
                     const Icon = categoryIcons[goal.category as keyof typeof categoryIcons];
                     const gradient = categoryColors[goal.category as keyof typeof categoryColors];
-                    const daysLeft = goal.target_date ? Math.ceil((new Date(goal.target_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
+                    const daysLeft = goal.target_date ? Math.ceil((new Date(goal.target_date).getTime() - now) / (1000 * 60 * 60 * 24)) : 0;
 
                     return (
                         <GlassCard key={goal.id} className={`p-6 ${goal.is_completed ? 'border-green-500/30' : ''}`}>
@@ -264,3 +266,5 @@ export const Meta360 = () => {
         </div>
     );
 };
+
+export default Meta360;

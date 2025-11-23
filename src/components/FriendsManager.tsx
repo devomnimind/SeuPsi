@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { UserPlus, UserMinus, Users, UserCheck, X, Check } from 'lucide-react';
 import { GlassCard } from './ui/GlassCard';
 import { useAuth } from '../contexts/AuthContext';
@@ -21,6 +21,15 @@ type Friend = {
     last_active_at: string;
 };
 
+interface SupabaseFriendRequestRow {
+    id: number;
+    sender_id: string;
+    receiver_id: string;
+    created_at: string;
+    sender?: { full_name: string; avatar_url: string }[];
+    receiver?: { full_name: string; avatar_url: string }[];
+}
+
 export const FriendsManager = () => {
     const { user } = useAuth();
     const [friends, setFriends] = useState<Friend[]>([]);
@@ -29,14 +38,7 @@ export const FriendsManager = () => {
     const [activeTab, setActiveTab] = useState<'friends' | 'requests'>('friends');
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        if (user) {
-            fetchFriends();
-            fetchRequests();
-        }
-    }, [user]);
-
-    const fetchFriends = async () => {
+    const fetchFriends = useCallback(async () => {
         if (!user) return;
 
         const { data, error } = await supabase.rpc('get_friends', { p_user_id: user.id });
@@ -47,9 +49,9 @@ export const FriendsManager = () => {
             setFriends(data || []);
         }
         setLoading(false);
-    };
+    }, [user]);
 
-    const fetchRequests = async () => {
+    const fetchRequests = useCallback(async () => {
         if (!user) return;
 
         // Solicitações recebidas
@@ -79,27 +81,37 @@ export const FriendsManager = () => {
             .eq('status', 'pending');
 
         setPendingRequests(
-            (received || []).map((r: any) => ({
+            (received || []).map((r: SupabaseFriendRequestRow) => ({
                 id: r.id,
                 sender_id: r.sender_id,
                 receiver_id: r.receiver_id,
-                sender_name: r.sender?.full_name || 'Usuário',
-                sender_avatar: r.sender?.avatar_url || '',
+                sender_name: r.sender?.[0]?.full_name || 'Usuário',
+                sender_avatar: r.sender?.[0]?.avatar_url || '',
                 created_at: r.created_at
             }))
         );
 
         setSentRequests(
-            (sent || []).map((r: any) => ({
+            (sent || []).map((r: SupabaseFriendRequestRow) => ({
                 id: r.id,
                 sender_id: r.sender_id,
                 receiver_id: r.receiver_id,
-                sender_name: r.receiver?.full_name || 'Usuário',
-                sender_avatar: r.receiver?.avatar_url || '',
+                sender_name: r.receiver?.[0]?.full_name || 'Usuário',
+                sender_avatar: r.receiver?.[0]?.avatar_url || '',
                 created_at: r.created_at
             }))
         );
-    };
+    }, [user]);
+
+    useEffect(() => {
+        if (user) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            fetchFriends();
+            fetchRequests();
+        }
+    }, [user, fetchFriends, fetchRequests]);
+
+
 
     const acceptRequest = async (requestId: number) => {
         const { error } = await supabase.rpc('accept_friend_request', { p_request_id: requestId });

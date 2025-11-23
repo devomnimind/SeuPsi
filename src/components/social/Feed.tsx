@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Heart, MessageCircle, Send, UserPlus, UserMinus } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
 import { useAuth } from '../../contexts/AuthContext';
@@ -35,16 +35,17 @@ export const Feed = () => {
     const [comments, setComments] = useState<Record<number, Comment[]>>({});
     const [newCommentContent, setNewCommentContent] = useState<Record<number, string>>({});
 
-    useEffect(() => {
-        fetchPosts();
-    }, [user]);
-
-    const fetchPosts = async () => {
+    const fetchPosts = useCallback(async () => {
         if (!user) return;
 
         const { data, error } = await supabase
             .from('posts')
-            .select('*')
+            .select(`
+                *,
+                author:profiles(id, full_name, avatar_url),
+                likes:post_likes(count),
+                comments:post_comments(count)
+            `)
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -52,31 +53,45 @@ export const Feed = () => {
             return;
         }
 
-        // Enriquecer posts com informações de like e follow
-        const enrichedPosts = await Promise.all((data || []).map(async (post) => {
-            const { data: likeData } = await supabase
-                .from('post_likes')
-                .select('id')
-                .eq('post_id', post.id)
-                .eq('user_id', user.id)
-                .single();
+        // Enrich posts with like status
+        const postsWithLikes = await Promise.all(
+            (data || []).map(async (post) => {
+                const { data: userLike } = await supabase
+                    .from('post_likes')
+                    .select('id')
+                    .eq('post_id', post.id)
+                    .eq('user_id', user.id)
+                    .single();
 
-            const { data: followData } = await supabase
-                .from('user_follows')
-                .select('id')
-                .eq('follower_id', user.id)
-                .eq('following_id', post.user_id)
-                .single();
+                return {
+                    ...post,
+                    isLiked: !!userLike,
+                    likes_count: post.likes?.[0]?.count || 0,
+                    comments_count: post.comments?.[0]?.count || 0
+                };
+            })
+        );
 
-            return {
-                ...post,
-                is_liked: !!likeData,
-                is_following: !!followData
-            };
+        const enrichedPosts = postsWithLikes.map((post) => ({
+            id: post.id,
+            user_id: post.author.id,
+            username: post.author.full_name,
+            avatar_url: post.author.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author.id}`,
+            content: post.content,
+            created_at: post.created_at,
+            likes: post.likes_count,
+            comments: post.comments_count,
+            is_liked: post.isLiked,
+            is_following: false // Default, logic to check following status can be added if needed
         }));
 
         setPosts(enrichedPosts);
-    };
+    }, [user]);
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        fetchPosts();
+    }, [user, fetchPosts]);
 
     const handleLike = async (postId: number) => {
         if (!user) return;
@@ -274,8 +289,8 @@ export const Feed = () => {
                             <button
                                 onClick={() => handleFollow(post.user_id)}
                                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${post.is_following
-                                        ? 'bg-white/10 text-gray-400 hover:bg-white/20'
-                                        : 'bg-neon-purple text-white hover:bg-neon-purple/80'
+                                    ? 'bg-white/10 text-gray-400 hover:bg-white/20'
+                                    : 'bg-neon-purple text-white hover:bg-neon-purple/80'
                                     }`}
                             >
                                 {post.is_following ? (

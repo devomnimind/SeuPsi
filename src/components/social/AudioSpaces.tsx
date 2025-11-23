@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Mic, Plus } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
 import { AudioService, type AudioRoom } from '../../services/AudioService';
@@ -12,21 +12,22 @@ export const AudioSpaces = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [newRoomTitle, setNewRoomTitle] = useState('');
 
-    useEffect(() => {
-        loadRooms();
-        // Poll for updates every 10s
-        const interval = setInterval(loadRooms, 10000);
-        return () => clearInterval(interval);
-    }, []);
-
-    const loadRooms = async () => {
+    const loadRooms = useCallback(async () => {
         try {
             const data = await AudioService.getActiveRooms();
             setRooms(data || []);
         } catch (error) {
             console.error('Error loading rooms:', error);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        loadRooms();
+        // Poll for updates every 10s
+        const interval = setInterval(loadRooms, 10000);
+        return () => clearInterval(interval);
+    }, [loadRooms]);
 
     const handleCreateRoom = async () => {
         if (!user || !newRoomTitle.trim()) return;

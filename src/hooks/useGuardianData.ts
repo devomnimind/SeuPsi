@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import {useState, useEffect, useCallback} from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import type { GuardianRelationshipRow, ProfileRow } from '../types/supabase';
 
 export type Minor = {
     id: string;
@@ -34,9 +35,7 @@ export const useGuardianData = () => {
     const [alerts, setAlerts] = useState<Alert[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        if (user) {
-           const fetchMinors = async () => {
+    const fetchMinors = useCallback(async () => {
         if (!user) return;
 
         // First, get guardian relationships for this guardian
@@ -52,7 +51,7 @@ export const useGuardianData = () => {
             return;
         }
 
-        const minorIds = relData.map((r: any) => r.minor_id);
+        const minorIds = (relData as GuardianRelationshipRow[]).map(r => r.minor_id);
         if (minorIds.length === 0) {
             setMinors([]);
             setLoading(false);
@@ -71,13 +70,13 @@ export const useGuardianData = () => {
             return;
         }
 
-        const formattedMinors = profileData.map((p: any) => ({
+        const formattedMinors = (profileData as ProfileRow[]).map(p => ({
             id: p.id,
             full_name: p.full_name,
-            avatar_url: p.avatar_url,
+            avatar_url: p.avatar_url || '',
             // relationship and alert info come from the earlier query
-            relationship_type: relData.find((r: any) => r.minor_id === p.id)?.relationship_type || '',
-            alert_level: relData.find((r: any) => r.minor_id === p.id)?.alert_level || ''
+            relationship_type: (relData as GuardianRelationshipRow[]).find(r => r.minor_id === p.id)?.relationship_type || '',
+            alert_level: (relData as GuardianRelationshipRow[]).find(r => r.minor_id === p.id)?.alert_level || ''
         }));
 
         setMinors(formattedMinors);
@@ -85,22 +84,9 @@ export const useGuardianData = () => {
             setSelectedMinor(formattedMinors[0]);
         }
         setLoading(false);
-    };
-            fetchMinors();
-        }
     }, [user]);
 
-    useEffect(() => {
-        if (selectedMinor) {
-            // Parallel fetch for metrics and alerts
-            Promise.all([
-                fetchMetrics(selectedMinor.id),
-                fetchAlerts(selectedMinor.id)
-            ]);
-        }
-    }, [selectedMinor]);
-
-    const fetchMetrics = async (minorId: string) => {
+    const fetchMetrics = useCallback(async (minorId: string) => {
         const { data, error } = await supabase
             .from('wellness_metrics')
             .select('*')
@@ -114,14 +100,16 @@ export const useGuardianData = () => {
         } else {
             setMetrics(data);
         }
-    };
+    }, []);
 
-    const fetchAlerts = async (minorId: string) => {
+    const fetchAlerts = useCallback(async (minorId: string) => {
+        if (!user) return;
+        
         const { data, error } = await supabase
             .from('guardian_alerts')
             .select('*')
             .eq('minor_id', minorId)
-            .eq('guardian_id', user!.id)
+            .eq('guardian_id', user.id)
             .order('created_at', { ascending: false })
             .limit(10);
 
@@ -130,7 +118,25 @@ export const useGuardianData = () => {
         } else {
             setAlerts(data || []);
         }
-    };
+    }, [user]);
+
+    useEffect(() => {
+        if (user) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            fetchMinors();
+        }
+    }, [user, fetchMinors]);
+
+    useEffect(() => {
+        if (selectedMinor) {
+            // Parallel fetch for metrics and alerts
+            Promise.all([
+                // eslint-disable-next-line react-hooks/set-state-in-effect
+                fetchMetrics(selectedMinor.id),
+                fetchAlerts(selectedMinor.id)
+            ]);
+        }
+    }, [selectedMinor, fetchMetrics, fetchAlerts]);
 
     return {
         minors,

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, MessageCircle, ArrowLeft } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { useAuth } from '../contexts/AuthContext';
@@ -33,14 +33,67 @@ export const PrivateChat = () => {
     const [loading, setLoading] = useState(true);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        if (user) {
-            fetchConversations();
+    const scrollToBottom = useCallback(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, []);
+
+    const fetchConversations = useCallback(async () => {
+        if (!user) return;
+
+        const { data, error } = await supabase.rpc('get_user_conversations', {
+            p_user_id: user.id
+        });
+
+        if (error) {
+            console.error('Error fetching conversations:', error);
+        } else {
+            setConversations(data || []);
         }
+        setLoading(false);
+    }, [user]);
+
+    const fetchMessages = useCallback(async (conversationId: number) => {
+        const { data, error } = await supabase
+            .from('private_messages')
+            .select('*')
+            .eq('conversation_id', conversationId)
+            .order('created_at', { ascending: true });
+
+        if (error) {
+            console.error('Error fetching messages:', error);
+        } else {
+            setMessages(data || []);
+        }
+    }, []);
+
+    const markAsRead = useCallback(async (conversationId: number) => {
+        if (!user) return;
+
+        await supabase.rpc('mark_messages_as_read', {
+            p_conversation_id: conversationId,
+            p_user_id: user.id
+        });
+
+        // Atualizar contador local
+        setConversations(prev =>
+            prev.map(conv =>
+                conv.conversation_id === conversationId
+                    ? { ...conv, unread_count: 0 }
+                    : conv
+            )
+        );
     }, [user]);
 
     useEffect(() => {
+        if (user) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            fetchConversations();
+        }
+    }, [user, fetchConversations]);
+
+    useEffect(() => {
         if (selectedConversation) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             fetchMessages(selectedConversation.conversation_id);
             markAsRead(selectedConversation.conversation_id);
 
@@ -69,62 +122,13 @@ export const PrivateChat = () => {
                 supabase.removeChannel(channel);
             };
         }
-    }, [selectedConversation]);
+    }, [selectedConversation, fetchMessages, markAsRead, scrollToBottom, user?.id]);
 
     useEffect(() => {
         scrollToBottom();
-    }, [messages]);
+    }, [messages, scrollToBottom]);
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
 
-    const fetchConversations = async () => {
-        if (!user) return;
-
-        const { data, error } = await supabase.rpc('get_user_conversations', {
-            p_user_id: user.id
-        });
-
-        if (error) {
-            console.error('Error fetching conversations:', error);
-        } else {
-            setConversations(data || []);
-        }
-        setLoading(false);
-    };
-
-    const fetchMessages = async (conversationId: number) => {
-        const { data, error } = await supabase
-            .from('private_messages')
-            .select('*')
-            .eq('conversation_id', conversationId)
-            .order('created_at', { ascending: true });
-
-        if (error) {
-            console.error('Error fetching messages:', error);
-        } else {
-            setMessages(data || []);
-        }
-    };
-
-    const markAsRead = async (conversationId: number) => {
-        if (!user) return;
-
-        await supabase.rpc('mark_messages_as_read', {
-            p_conversation_id: conversationId,
-            p_user_id: user.id
-        });
-
-        // Atualizar contador local
-        setConversations(prev =>
-            prev.map(conv =>
-                conv.conversation_id === conversationId
-                    ? { ...conv, unread_count: 0 }
-                    : conv
-            )
-        );
-    };
 
     const sendMessage = async () => {
         if (!user || !selectedConversation || !newMessage.trim()) return;
@@ -302,3 +306,5 @@ export const PrivateChat = () => {
         </div>
     );
 };
+
+export default PrivateChat;

@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, Bot, User, Plus, Loader2, Brain, Sparkles, Theater, Sofa } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
+import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { AiService, type Message, type Session, type TherapyMode } from '../../services/AiService';
 import { ModerationService } from '../../services/ModerationService';
@@ -17,11 +18,7 @@ export const AiChatWindow = () => {
     const [showNewChatModal, setShowNewChatModal] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        if (user) {
-            loadSessions();
-        }
-    }, [user]);
+
 
     useEffect(() => {
         if (currentSession) {
@@ -39,18 +36,33 @@ export const AiChatWindow = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
-    const loadSessions = async () => {
+    const loadSessions = useCallback(async () => {
         if (!user) return;
         try {
-            const data = await AiService.getSessions(user.id);
-            setSessions(data || []);
-            if (data && data.length > 0 && !currentSession) {
-                setCurrentSession(data[0]);
+            // Assuming 'supabase' is available in this scope or will be imported.
+            // This part of the code was provided in the instruction.
+            const { data } = await supabase
+                .from('ai_chat_sessions')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('updated_at', { ascending: false });
+
+            if (data) {
+                setSessions(data);
+                if (data.length > 0 && !currentSession) {
+                    setCurrentSession(data[0]);
+                }
             }
         } catch (error) {
             console.error('Error loading sessions:', error);
         }
-    };
+    }, [user, currentSession]);
+
+    useEffect(() => {
+        if (user) {
+            loadSessions();
+        }
+    }, [user, loadSessions]);
 
     const loadMessages = async (sessionId: string) => {
         setLoading(true);

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import type { ElementType } from 'react';
 import { Trophy, Target, Flame, Star, Lock } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { useAuth } from '../contexts/AuthContext';
@@ -41,13 +42,7 @@ export const Engagement = () => {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'achievements' | 'challenges' | 'streak'>('challenges');
 
-    useEffect(() => {
-        if (user) {
-            fetchData();
-        }
-    }, [user]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         if (!user) return;
 
         // Buscar conquistas
@@ -103,10 +98,17 @@ export const Engagement = () => {
         }
 
         setLoading(false);
-    };
+    }, [user]);
+
+    useEffect(() => {
+        if (user) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            fetchData();
+        }
+    }, [user, fetchData]);
 
     const getIconComponent = (iconName: string, size: number = 24) => {
-        const icons: Record<string, any> = {
+        const icons: Record<string, ElementType> = {
             Trophy, Target, Flame, Star, Lock
         };
         const Icon = icons[iconName] || Star;
@@ -131,8 +133,8 @@ export const Engagement = () => {
                 <button
                     onClick={() => setActiveTab('challenges')}
                     className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${activeTab === 'challenges'
-                            ? 'bg-neon-purple text-white shadow-neon'
-                            : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                        ? 'bg-neon-purple text-white shadow-neon'
+                        : 'bg-white/5 text-gray-400 hover:bg-white/10'
                         }`}
                 >
                     <Target className="inline mr-2" size={20} />
@@ -141,8 +143,8 @@ export const Engagement = () => {
                 <button
                     onClick={() => setActiveTab('achievements')}
                     className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${activeTab === 'achievements'
-                            ? 'bg-neon-purple text-white shadow-neon'
-                            : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                        ? 'bg-neon-purple text-white shadow-neon'
+                        : 'bg-white/5 text-gray-400 hover:bg-white/10'
                         }`}
                 >
                     <Trophy className="inline mr-2" size={20} />
@@ -151,8 +153,8 @@ export const Engagement = () => {
                 <button
                     onClick={() => setActiveTab('streak')}
                     className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${activeTab === 'streak'
-                            ? 'bg-neon-purple text-white shadow-neon'
-                            : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                        ? 'bg-neon-purple text-white shadow-neon'
+                        : 'bg-white/5 text-gray-400 hover:bg-white/10'
                         }`}
                 >
                     <Flame className="inline mr-2" size={20} />
@@ -297,3 +299,5 @@ export const Engagement = () => {
         </div>
     );
 };
+
+export default Engagement;

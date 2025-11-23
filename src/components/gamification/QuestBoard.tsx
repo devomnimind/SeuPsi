@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { CheckCircle, Star } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
 import { RpgService, type Quest } from '../../services/RpgService';
@@ -10,29 +10,29 @@ export const QuestBoard = () => {
     const [quests, setQuests] = useState<Quest[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        if (user) {
-            loadQuests();
-        }
-    }, [user]);
-
-    const loadQuests = async () => {
+    const loadQuests = useCallback(async () => {
         if (!user) return;
         try {
-            const data = await RpgService.getAvailableQuests(user.id);
+            const data = await RpgService.getAvailableQuests();
             setQuests(data || []);
         } catch (error) {
             console.error('Error loading quests:', error);
         } finally {
             setLoading(false);
         }
-    };
+    }, [user]);
+
+    useEffect(() => {
+        if (user) {
+            loadQuests();
+        }
+    }, [user, loadQuests]);
 
     const handleCompleteQuest = async (quest: Quest) => {
         if (!user) return;
         try {
             await RpgService.completeQuest(user.id, quest.id);
-            toast.success(`Missão "${quest.title}" completada! +${quest.xp_reward} XP`);
+            toast.success(`Missão "${quest.title}" completada! + ${quest.xp_reward} XP`);
             // Recarregar quests ou atualizar estado local
             // Por enquanto, apenas removemos visualmente para simular
             setQuests(prev => prev.filter(q => q.id !== quest.id));
@@ -54,8 +54,8 @@ export const QuestBoard = () => {
                 {quests.map(quest => (
                     <GlassCard key={quest.id} className="p-4 flex items-center justify-between group hover:border-neon-purple/50 transition-all">
                         <div className="flex items-start gap-4">
-                            <div className={`p-3 rounded-full ${quest.type === 'story' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
-                                }`}>
+                            <div className={`p - 3 rounded - full ${quest.type === 'story' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
+                                } `}>
                                 <Star size={20} />
                             </div>
                             <div>

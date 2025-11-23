@@ -50,8 +50,12 @@ export const Register = () => {
 
                 navigate('/profile');
             }
-        } catch (err: any) {
-            setError(err.message || 'Erro ao criar conta');
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError('Erro ao criar conta');
+            }
         } finally {
             setLoading(false);
         }
@@ -149,3 +153,5 @@ export const Register = () => {
         </div>
     );
 };
+
+export default Register;

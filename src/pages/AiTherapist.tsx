@@ -46,3 +46,5 @@ export const AiTherapist = () => {
         </div>
     );
 };
+
+export default AiTherapist;

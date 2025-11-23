@@ -1,0 +1,25 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run lint
+echo "🔍 Running ESLint..."
+npm run lint || {
+  echo "❌ ESLint failed. Please fix errors before committing."
+  exit 1
+}
+
+# Run type check
+echo "🔎 Running TypeScript check..."
+npx tsc --noEmit || {
+  echo "❌ TypeScript check failed. Please fix type errors before committing."
+  exit 1
+}
+
+# Run build to ensure it compiles
+echo "🏗️  Building project..."
+npm run build || {
+  echo "❌ Build failed. Please fix build errors before committing."
+  exit 1
+}
+
+echo "✅ All checks passed!"

@@ -25,8 +25,12 @@ export const Login = () => {
             if (error) throw error;
 
             navigate('/profile');
-        } catch (err: any) {
-            setError(err.message || 'Erro ao fazer login');
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError('Erro ao fazer login');
+            }
         } finally {
             setLoading(false);
         }
@@ -108,3 +112,5 @@ export const Login = () => {
         </div>
     );
 };
+
+export default Login;

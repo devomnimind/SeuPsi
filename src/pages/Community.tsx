@@ -109,3 +109,5 @@ export const Community = () => {
         </div>
     );
 };
+
+export default Community;

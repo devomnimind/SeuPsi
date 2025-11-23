@@ -17,3 +17,5 @@ export const Studies = () => {
         </div>
     );
 };
+
+export default Studies;

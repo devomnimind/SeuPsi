@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Phone, Plus, Trash2, ShieldAlert } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
 import { useAuth } from '../../contexts/AuthContext';
@@ -30,17 +30,14 @@ export const EmergencyContactsConfig = () => {
     const [newPhone, setNewPhone] = useState('');
     const [newRelationship, setNewRelationship] = useState('parent');
 
-    useEffect(() => {
-        if (user) {
-            fetchContacts();
-        }
-    }, [user]);
 
-    const fetchContacts = async () => {
+
+    const fetchContacts = useCallback(async () => {
+        if (!user) return;
         const { data, error } = await supabase
             .from('emergency_contacts')
             .select('*')
-            .eq('user_id', user!.id)
+            .eq('user_id', user.id)
             .order('priority_order');
 
         if (error) {
@@ -49,7 +46,14 @@ export const EmergencyContactsConfig = () => {
             setContacts(data || []);
         }
         setLoading(false);
-    };
+    }, [user]);
+
+    useEffect(() => {
+        if (user) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            fetchContacts();
+        }
+    }, [user, fetchContacts]);
 
     const addContact = async () => {
         if (!newName || !newPhone) return;
@@ -277,3 +281,5 @@ const Toggle = ({ label, checked, onChange, warning = false }: { label: string, 
 );
 
 import { AlertTriangle } from 'lucide-react';
+
+export default EmergencyContactsConfig;

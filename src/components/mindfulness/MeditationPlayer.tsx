@@ -14,7 +14,7 @@ export const MeditationPlayer = () => {
         if (!topic.trim()) return;
         setLoading(true);
         try {
-            const generatedScript = await MeditationGenerator.generateScript(topic);
+            const generatedScript = await MeditationGenerator.generateMeditation(topic);
             setScript(generatedScript);
             toast.success('Meditação gerada com sucesso!');
         } catch (error) {

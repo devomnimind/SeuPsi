@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ShieldAlert, Wind, Eye, Heart, Phone, Target, Calendar, TrendingDown, AlertTriangle, CheckCircle } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { useAuth } from '../contexts/AuthContext';
@@ -39,31 +39,7 @@ export const LibertaMente = () => {
     const [selectedSeverity, setSelectedSeverity] = useState(3);
     const [selectedGoal, setSelectedGoal] = useState('abstinence');
 
-    useEffect(() => {
-        if (user) {
-            checkProfile();
-        }
-    }, [user]);
-
-    const checkProfile = async () => {
-        if (!user) return;
-
-        const { data } = await supabase
-            .from('addiction_profiles')
-            .select('*')
-            .eq('user_id', user.id)
-            .single();
-
-        if (data) {
-            setHasProfile(true);
-            setProfile(data);
-            fetchDashboardData();
-        } else {
-            setShowOnboarding(true);
-        }
-    };
-
-    const fetchDashboardData = async () => {
+    const fetchDashboardData = useCallback(async () => {
         if (!user || !profile) return;
 
         // Buscar clean streak
@@ -87,7 +63,39 @@ export const LibertaMente = () => {
             .order('created_at', { ascending: false });
 
         setGoals(goalsData || []);
-    };
+    }, [user, profile]);
+
+    const checkProfile = useCallback(async () => {
+        if (!user) return;
+
+        const { data } = await supabase
+            .from('addiction_profiles')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+
+        if (data) {
+            setHasProfile(true);
+            setProfile(data);
+            // fetchDashboardData will be called by useEffect when profile changes
+        } else {
+            setShowOnboarding(true);
+        }
+    }, [user]);
+
+    useEffect(() => {
+        if (user) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            checkProfile();
+        }
+    }, [user, checkProfile]);
+
+    useEffect(() => {
+        if (hasProfile && profile) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            fetchDashboardData();
+        }
+    }, [hasProfile, profile, fetchDashboardData]);
 
     const createProfile = async () => {
         if (!user || !selectedAddiction) return;
@@ -161,8 +169,8 @@ export const LibertaMente = () => {
                                         key={type.value}
                                         onClick={() => setSelectedAddiction(type.value)}
                                         className={`p-4 rounded-xl border-2 transition-all ${selectedAddiction === type.value
-                                                ? 'border-red-500 bg-red-500/10'
-                                                : 'border-white/10 bg-white/5 hover:border-white/20'
+                                            ? 'border-red-500 bg-red-500/10'
+                                            : 'border-white/10 bg-white/5 hover:border-white/20'
                                             }`}
                                     >
                                         <div className="text-3xl mb-2">{type.icon}</div>
@@ -205,8 +213,8 @@ export const LibertaMente = () => {
                                         key={goal.value}
                                         onClick={() => setSelectedGoal(goal.value)}
                                         className={`w-full p-4 rounded-xl border-2 text-left transition-all ${selectedGoal === goal.value
-                                                ? 'border-red-500 bg-red-500/10'
-                                                : 'border-white/10 bg-white/5 hover:border-white/20'
+                                            ? 'border-red-500 bg-red-500/10'
+                                            : 'border-white/10 bg-white/5 hover:border-white/20'
                                             }`}
                                     >
                                         <p className="font-semibold text-white">{goal.label}</p>
@@ -265,10 +273,10 @@ export const LibertaMente = () => {
                     return (
                         <button
                             key={tab.id}
-                            onClick={() => setActiveTab(tab.id as any)}
+                            onClick={() => setActiveTab(tab.id as 'dashboard' | 'goals' | 'tools' | 'journal')}
                             className={`flex items-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all whitespace-nowrap ${activeTab === tab.id
-                                    ? 'bg-red-500 text-white'
-                                    : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                                ? 'bg-red-500 text-white'
+                                : 'bg-white/5 text-gray-400 hover:bg-white/10'
                                 }`}
                         >
                             <Icon size={20} />
@@ -398,3 +406,5 @@ export const LibertaMente = () => {
         </div>
     );
 };
+
+export default LibertaMente;

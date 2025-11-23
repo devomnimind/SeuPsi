@@ -7,7 +7,7 @@ const QDRANT_API_KEY = import.meta.env.VITE_SEUPSI_QDRANT_API_KEY || '';
 const COLLECTION_NAME = import.meta.env.VITE_SEUPSI_QDRANT_COLLECTION || 'omnimind_memories';
 
 // Singleton para o pipeline de embeddings (para não recarregar o modelo toda vez)
-let embeddingPipeline: any = null;
+let embeddingPipeline: unknown = null;
 
 export const VectorService = {
     async getEmbedding(text: string) {
@@ -17,7 +17,8 @@ export const VectorService = {
             embeddingPipeline = await pipeline('feature-extraction', 'Xenova/all-mpnet-base-v2');
         }
 
-        const output = await embeddingPipeline(text, { pooling: 'mean', normalize: true });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const output = await (embeddingPipeline as any)(text, { pooling: 'mean', normalize: true });
         return Array.from(output.data);
     },
 

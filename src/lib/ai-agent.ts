@@ -1,5 +1,3 @@
-import type { UserProfile } from '../types';
-
 export interface DailySuggestion {
     quote: {
         text: string;
@@ -31,7 +29,7 @@ const TIPS = {
     bad: "Tire um momento para respirar fundo. Não se cobre tanto hoje."
 };
 
-export const generateDailySuggestions = (mood: 'good' | 'neutral' | 'bad', _userProfile?: UserProfile): DailySuggestion => {
+export const generateDailySuggestions = (mood: 'good' | 'neutral' | 'bad'): DailySuggestion => {
     // Simple mock logic: select content based on mood
     // In a real app, this would use an LLM and userProfile history
 

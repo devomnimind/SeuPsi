@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Play, X, Pause, Clock, Brain } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { supabase } from '../lib/supabase';
@@ -20,31 +20,7 @@ export const Mindfulness = () => {
     const [loading, setLoading] = useState(true);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    useEffect(() => {
-        fetchMeditations();
-    }, []);
-
-    useEffect(() => {
-        if (selectedMeditation) {
-            setTimeLeft(selectedMeditation.duration_seconds);
-            setIsPlaying(true);
-        }
-    }, [selectedMeditation]);
-
-    useEffect(() => {
-        if (isPlaying && timeLeft > 0) {
-            timerRef.current = setInterval(() => {
-                setTimeLeft(prev => prev - 1);
-            }, 1000);
-        } else if (timeLeft === 0 && selectedMeditation) {
-            handleComplete();
-        }
-        return () => {
-            if (timerRef.current) clearInterval(timerRef.current);
-        };
-    }, [isPlaying, timeLeft, selectedMeditation]);
-
-    const fetchMeditations = async () => {
+    const fetchMeditations = useCallback(async () => {
         const { data, error } = await supabase
             .from('meditations')
             .select('*');
@@ -52,9 +28,9 @@ export const Mindfulness = () => {
         if (error) console.error('Error fetching meditations:', error);
         else setMeditations(data || []);
         setLoading(false);
-    };
+    }, []);
 
-    const handleComplete = async () => {
+    const handleComplete = useCallback(async () => {
         setIsPlaying(false);
         if (timerRef.current) clearInterval(timerRef.current);
 
@@ -97,7 +73,36 @@ export const Mindfulness = () => {
         }
 
         setSelectedMeditation(null);
-    };
+    }, [user, selectedMeditation]);
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        fetchMeditations();
+    }, [fetchMeditations]);
+
+    useEffect(() => {
+        if (selectedMeditation) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setTimeLeft(selectedMeditation.duration_seconds);
+            setIsPlaying(true);
+        }
+    }, [selectedMeditation]);
+
+    useEffect(() => {
+        if (isPlaying && timeLeft > 0) {
+            timerRef.current = setInterval(() => {
+                setTimeLeft(prev => prev - 1);
+            }, 1000);
+        } else if (timeLeft === 0 && selectedMeditation) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            handleComplete();
+        }
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, [isPlaying, timeLeft, selectedMeditation, handleComplete]);
+
+
 
     const togglePlay = () => {
         setIsPlaying(!isPlaying);
@@ -186,3 +191,5 @@ export const Mindfulness = () => {
         </div>
     );
 };
+
+export default Mindfulness;

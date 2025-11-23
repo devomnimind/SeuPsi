@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Mic, MicOff, Hand, PhoneOff, User as UserIcon } from 'lucide-react';
 // import { GlassCard } from '../ui/GlassCard';
 import { useAuth } from '../../contexts/AuthContext';
@@ -15,17 +15,20 @@ export const AudioRoomView = ({ room, onLeave }: AudioRoomProps) => {
     const [participants, setParticipants] = useState<AudioParticipant[]>([]);
     const [myStatus, setMyStatus] = useState<AudioParticipant | null>(null);
 
-    useEffect(() => {
-        if (user) {
-            joinRoom();
-            subscribeToRoom();
-        }
-        return () => {
-            if (user) AudioService.leaveRoom(room.id, user.id);
-        };
-    }, [room.id]);
+    const fetchParticipants = useCallback(async () => {
+        const { data } = await supabase
+            .from('audio_participants')
+            .select('*, user:profiles(full_name, avatar_url)')
+            .eq('room_id', room.id);
 
-    const joinRoom = async () => {
+        if (data) {
+            setParticipants(data);
+            const me = data.find(p => p.user_id === user?.id);
+            if (me) setMyStatus(me);
+        }
+    }, [room.id, user]);
+
+    const joinRoom = useCallback(async () => {
         if (!user) return;
         try {
             await AudioService.joinRoom(room.id, user.id);
@@ -33,24 +36,9 @@ export const AudioRoomView = ({ room, onLeave }: AudioRoomProps) => {
         } catch (error) {
             console.error('Error joining room:', error);
         }
-    };
+    }, [user, room.id, fetchParticipants]);
 
-    const fetchParticipants = async () => {
-        const { data } = await supabase
-            .from('audio_participants')
-            .select('*, user:profiles(full_name, avatar_url)')
-            .eq('room_id', room.id);
-
-        if (data) {
-            // @ts-ignore - Supabase types mapping issue
-            setParticipants(data);
-            // @ts-ignore
-            const me = data.find(p => p.user_id === user?.id);
-            if (me) setMyStatus(me);
-        }
-    };
-
-    const subscribeToRoom = () => {
+    const subscribeToRoom = useCallback(() => {
         const subscription = supabase
             .channel(`room-${room.id}`)
             .on('postgres_changes', {
@@ -66,7 +54,20 @@ export const AudioRoomView = ({ room, onLeave }: AudioRoomProps) => {
         return () => {
             subscription.unsubscribe();
         };
-    };
+    }, [room.id, fetchParticipants]);
+
+    useEffect(() => {
+        if (user) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            joinRoom();
+            subscribeToRoom();
+        }
+        return () => {
+            if (user) AudioService.leaveRoom(room.id, user.id);
+        };
+    }, [room.id, user, joinRoom, subscribeToRoom]);
+
+
 
     const toggleMute = async () => {
         if (!user || !myStatus) return;

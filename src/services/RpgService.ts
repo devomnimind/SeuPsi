@@ -59,7 +59,7 @@ export const RpgService = {
     },
 
     // Buscar missões disponíveis (não completadas hoje/nunca)
-    async getAvailableQuests(_userId: string) {
+    async getAvailableQuests() {
         // Simplificação: Pega todas as quests. 
         // Em produção, filtraria as já feitas pelo usuário.
         const { data, error } = await supabase
@@ -69,6 +69,8 @@ export const RpgService = {
         if (error) throw error;
         return data as Quest[];
     },
+
+
 
     // Completar missão e dar recompensa
     async completeQuest(userId: string, questId: number) {
@@ -93,7 +95,7 @@ export const RpgService = {
         let newXp = profile.current_xp + quest.xp_reward;
         let newLevel = profile.level;
         let nextLevelXp = profile.next_level_xp;
-        let newAttributes = { ...profile.attributes };
+        const newAttributes = { ...profile.attributes };
 
         // Level Up Logic
         if (newXp >= nextLevelXp) {

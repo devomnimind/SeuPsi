@@ -150,3 +150,5 @@ export const GuardianDashboard = () => {
         </div>
     );
 };
+
+export default GuardianDashboard;

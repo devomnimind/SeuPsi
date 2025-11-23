@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Shield, Zap, Heart, Book, Trophy } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
 import { RpgService, type HeroProfile } from '../../services/RpgService';
@@ -9,23 +9,27 @@ export const HeroProfileView = () => {
     const [profile, setProfile] = useState<HeroProfile | null>(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        if (user) {
-            loadProfile();
-        }
-    }, [user]);
-
-    const loadProfile = async () => {
+    const loadProfile = useCallback(async () => {
         if (!user) return;
+        setLoading(true); // Start loading
         try {
+            // Assuming supabase is available or RpgService is updated to use it
+            // For now, I'll adapt the instruction's logic to the existing RpgService structure
             const data = await RpgService.getHeroProfile(user.id);
             setProfile(data);
         } catch (error) {
             console.error('Error loading hero profile:', error);
+            setProfile(null); // Clear profile on error
         } finally {
-            setLoading(false);
+            setLoading(false); // End loading
         }
-    };
+    }, [user]);
+
+    useEffect(() => {
+        if (user) {
+            loadProfile();
+        }
+    }, [user, loadProfile]);
 
     if (loading) return <div className="text-white">Carregando perfil...</div>;
     if (!profile) return null;
@@ -60,7 +64,7 @@ export const HeroProfileView = () => {
                     <div className="h-3 bg-black/40 rounded-full overflow-hidden border border-white/10">
                         <div
                             className="h-full bg-gradient-to-r from-neon-purple to-neon-green transition-all duration-1000"
-                            style={{ width: `${xpPercentage}%` }}
+                            style={{ width: `${xpPercentage}% ` }}
                         />
                     </div>
                 </div>

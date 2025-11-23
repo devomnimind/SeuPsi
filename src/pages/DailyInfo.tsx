@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import type { ElementType } from 'react';
 import { Save, Smile, Frown, Meh, Clock } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { supabase } from '../lib/supabase';
@@ -8,7 +9,7 @@ import { toast } from 'sonner';
 
 type Mood = 'happy' | 'neutral' | 'sad';
 
-const MOOD_OPTIONS: { value: Mood; label: string; icon: any; color: string }[] = [
+const MOOD_OPTIONS: { value: Mood; label: string; icon: ElementType; color: string }[] = [
     { value: 'happy', label: 'Bem', icon: Smile, color: 'text-green-400' },
     { value: 'neutral', label: 'Normal', icon: Meh, color: 'text-yellow-400' },
     { value: 'sad', label: 'Mal', icon: Frown, color: 'text-red-400' },
@@ -25,15 +26,10 @@ export const DailyInfo = () => {
     const [sleepHours, setSleepHours] = useState<number>(7);
     const [notes, setNotes] = useState('');
     const [loading, setLoading] = useState(false);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [todayEntry, setTodayEntry] = useState<any>(null);
 
-    useEffect(() => {
-        if (user) {
-            checkTodayEntry();
-        }
-    }, [user]);
-
-    const checkTodayEntry = async () => {
+    const checkTodayEntry = useCallback(async () => {
         if (!user) return;
 
         const today = new Date().toISOString().split('T')[0];
@@ -51,7 +47,13 @@ export const DailyInfo = () => {
             setSleepHours(data.sleep_hours);
             setNotes(data.notes || '');
         }
-    };
+    }, [user]);
+
+    useEffect(() => {
+        if (user) {
+            checkTodayEntry();
+        }
+    }, [user, checkTodayEntry]);
 
     const handleSave = async () => {
         if (!user || !mood) {
@@ -189,3 +191,5 @@ export const DailyInfo = () => {
         </div>
     );
 };
+
+export default DailyInfo;

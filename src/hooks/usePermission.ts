@@ -1,6 +1,6 @@
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export type Permission = 
     | 'view_admin_panel'
@@ -15,16 +15,7 @@ export const usePermission = () => {
     const [role, setRole] = useState<Role>('user');
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        if (user) {
-            fetchUserRole();
-        } else {
-            setRole('user');
-            setLoading(false);
-        }
-    }, [user]);
-
-    const fetchUserRole = async () => {
+    const fetchUserRole = useCallback(async () => {
         try {
             const { data, error } = await supabase
                 .from('profiles')
@@ -42,7 +33,16 @@ export const usePermission = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [user]);
+
+    useEffect(() => {
+        if (user) {
+            fetchUserRole();
+        } else {
+            setRole('user');
+            setLoading(false);
+        }
+    }, [user, fetchUserRole]);
 
     const can = (permission: Permission): boolean => {
         if (role === 'admin') return true;

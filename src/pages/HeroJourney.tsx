@@ -15,3 +15,5 @@ export const HeroJourney = () => {
         </div>
     );
 };
+
+export default HeroJourney;

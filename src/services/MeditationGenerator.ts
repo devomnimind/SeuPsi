@@ -1,7 +1,7 @@
 import { VectorService } from './VectorService';
 
 export const MeditationGenerator = {
-    async generateScript(topic: string, _durationMinutes: number = 5) {
+    async generateMeditation(topic: string): Promise<string> {
         // 1. RAG: Buscar contexto no banco vetorial
         console.log(`Buscando contexto para: ${topic}`);
         const contextResults = await VectorService.search(topic, 3);

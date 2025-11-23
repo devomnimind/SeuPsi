@@ -1,19 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Send, Bot, User } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 
+interface ChatMessage {
+    id: number;
+    user_id: string;
+    type: string;
+    text: string;
+    created_at: string;
+}
+
 export const Chat = () => {
     const { user } = useAuth();
-    const [messages, setMessages] = useState<any[]>([]);
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
 
-    useEffect(() => {
-        fetchMessages();
-    }, []);
-
-    const fetchMessages = async () => {
+    const fetchMessages = useCallback(async () => {
         const { data, error } = await supabase
             .from('chat_messages')
             .select('*')
@@ -21,7 +25,14 @@ export const Chat = () => {
 
         if (error) console.error('Error fetching messages:', error);
         else setMessages(data || []);
-    };
+    }, []);
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        fetchMessages();
+    }, [fetchMessages]);
+
+
 
     const handleSend = async () => {
         if (!input.trim() || !user) return;

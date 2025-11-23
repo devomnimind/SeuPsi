@@ -59,3 +59,5 @@ export const SafetyCenter = () => {
         </div>
     );
 };
+
+export default SafetyCenter;

@@ -18,7 +18,7 @@ export type StudySchedule = {
 };
 
 export const StudyGenerator = {
-    async generateQuestions(topic: string, _count: number = 5): Promise<Question[]> {
+    generateQuestions: async (topic: string): Promise<Question[]> => {
         console.log(`Buscando material de estudo para: ${topic}`);
         const contextResults = await VectorService.search(topic, 5);
         
