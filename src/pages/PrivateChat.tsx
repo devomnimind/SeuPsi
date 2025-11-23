@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, MessageCircle, ArrowLeft } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
+import { ModerationModal } from '../components/ui/ModerationModal';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { ModerationService } from '../services/ModerationService';
@@ -31,6 +32,7 @@ export const PrivateChat = () => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [loading, setLoading] = useState(true);
+    const [moderationAlert, setModerationAlert] = useState({ isOpen: false, feedback: '', suggestion: '' });
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = useCallback(() => {
@@ -136,7 +138,11 @@ export const PrivateChat = () => {
         // Moderação
         const moderation = await ModerationService.analyzeText(newMessage);
         if (!moderation.isSafe) {
-            toast.error('Mensagem bloqueada por conter termos inadequados.');
+            setModerationAlert({
+                isOpen: true,
+                feedback: moderation.feedback || 'Mensagem bloqueada.',
+                suggestion: moderation.suggestion || 'Por favor, mantenha o respeito no chat privado.'
+            });
             return;
         }
 
@@ -168,7 +174,16 @@ export const PrivateChat = () => {
     }
 
     return (
-        <div className="flex gap-4 h-[calc(100vh-120px)]">
+        <div className="flex gap-4 h-[calc(100vh-120px)] relative">
+            <ModerationModal
+                isOpen={moderationAlert.isOpen}
+                feedback={moderationAlert.feedback}
+                suggestion={moderationAlert.suggestion}
+                onClose={() => setModerationAlert({ ...moderationAlert, isOpen: false })}
+                onEdit={() => { /* Mantém texto */ }}
+                onDiscard={() => setNewMessage('')}
+            />
+
             {/* Lista de Conversas */}
             <div className={`${selectedConversation ? 'hidden md:block' : ''} md:w-80 w-full`}>
                 <GlassCard className="h-full flex flex-col">
