@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import type { ElementType } from 'react';
-import { Save, Smile, Frown, Meh, Clock } from 'lucide-react';
+import { Save, Smile, Frown, Meh, Clock, Sparkles } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserStore } from '../store/useStore';
+import { AiService } from '../services/AiService';
 import { toast } from 'sonner';
 
 type Mood = 'happy' | 'neutral' | 'sad';
@@ -26,6 +27,7 @@ export const DailyInfo = () => {
     const [sleepHours, setSleepHours] = useState<number>(7);
     const [notes, setNotes] = useState('');
     const [loading, setLoading] = useState(false);
+    const [aiFeedback, setAiFeedback] = useState<string>('');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [todayEntry, setTodayEntry] = useState<any>(null);
 
@@ -98,6 +100,11 @@ export const DailyInfo = () => {
 
             toast.success(todayEntry ? 'Registro atualizado!' : 'Registro salvo!');
             checkTodayEntry();
+
+            // Gerar Feedback da IA
+            const feedback = await AiService.analyzeDiaryEntry({ mood, notes, sleep_hours: sleepHours });
+            setAiFeedback(feedback);
+
         } catch (error) {
             console.error('Error saving daily info:', error);
             toast.error('Erro ao salvar registro.');
@@ -187,6 +194,16 @@ export const DailyInfo = () => {
                     <Save size={24} />
                     {loading ? 'Salvando...' : (todayEntry ? 'Atualizar Registro' : 'Salvar Registro')}
                 </button>
+
+                {aiFeedback && (
+                    <div className="bg-white/10 border border-neon-purple/30 rounded-xl p-6 animate-fade-in">
+                        <div className="flex items-center gap-3 mb-2 text-neon-purple">
+                            <Sparkles size={24} />
+                            <h3 className="font-bold text-lg">Mensagem para você</h3>
+                        </div>
+                        <p className="text-gray-200 italic leading-relaxed">"{aiFeedback}"</p>
+                    </div>
+                )}
             </GlassCard>
         </div>
     );

@@ -61,6 +61,29 @@ export const AiService = {
         return data;
     },
 
+    // Analisar entrada de diário e gerar feedback
+    async analyzeDiaryEntry(entry: { mood: string; notes: string; sleep_hours: number }) {
+        const prompt = `Instruction: You are an empathetic wellness companion. Analyze this daily journal entry.
+        Mood: ${entry.mood}
+        Sleep: ${entry.sleep_hours}h
+        Notes: "${entry.notes}"
+        
+        Task: Provide a short, warm, and supportive feedback message in Portuguese (max 2 sentences).
+        - If mood is sad/bad, offer comfort and suggest a small self-care action.
+        - If mood is happy, celebrate it.
+        - If sleep is low (< 6h), gently suggest rest.
+        - If notes contain self-harm keywords, STRICTLY suggest seeking professional help immediately.
+        
+        Feedback:`;
+
+        try {
+            return await LocalLlmService.generate(prompt, 100);
+        } catch (err) {
+            console.error("Error generating diary feedback:", err);
+            return "Obrigado por compartilhar. Lembre-se de cuidar de si mesmo hoje.";
+        }
+    },
+
     // Enviar mensagem e obter resposta (REAL com RAG + Local LLM)
     async sendMessage(sessionId: string, content: string, mode: TherapyMode = 'tcc') {
         // 0. Buscar dados da sessão para obter user_id
