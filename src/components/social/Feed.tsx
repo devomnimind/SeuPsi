@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Heart, MessageCircle, Send, UserPlus, UserMinus } from 'lucide-react';
+import { Heart, MessageCircle, Send, UserPlus, UserMinus, AlertTriangle, Edit3 } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { addXP, updateChallengeProgress, XP_VALUES, CHALLENGE_TYPES } from '../../lib/gamification';
+import { ModerationService } from '../../services/ModerationService';
 
 type Post = {
     id: number;
@@ -34,6 +35,16 @@ export const Feed = () => {
     const [expandedComments, setExpandedComments] = useState<Record<number, boolean>>({});
     const [comments, setComments] = useState<Record<number, Comment[]>>({});
     const [newCommentContent, setNewCommentContent] = useState<Record<number, string>>({});
+    
+    // Moderation State
+    const [moderationAlert, setModerationAlert] = useState<{
+        isOpen: boolean;
+        feedback: string;
+        suggestion: string;
+        type: 'post' | 'comment';
+        targetId?: number; // postId for comment
+    }>({ isOpen: false, feedback: '', suggestion: '', type: 'post' });
+    const [isModerating, setIsModerating] = useState(false);
 
     const fetchPosts = useCallback(async () => {
         if (!user) return;
@@ -154,6 +165,21 @@ export const Feed = () => {
     const handleCreatePost = async () => {
         if (!newPostContent.trim() || !user) return;
 
+        // 1. Moderação Proativa
+        setIsModerating(true);
+        const analysis = await ModerationService.analyzeText(newPostContent);
+        setIsModerating(false);
+
+        if (!analysis.isSafe) {
+            setModerationAlert({
+                isOpen: true,
+                feedback: analysis.feedback || 'Conteúdo inadequado detectado.',
+                suggestion: analysis.suggestion || 'Por favor, revise seu texto.',
+                type: 'post'
+            });
+            return;
+        }
+
         const { data: profile } = await supabase
             .from('profiles')
             .select('username, avatar_url')
@@ -216,6 +242,21 @@ export const Feed = () => {
     const handleComment = async (postId: number) => {
         if (!user || !newCommentContent[postId]?.trim()) return;
 
+        // 1. Moderação Proativa (Comentários)
+        const content = newCommentContent[postId];
+        const analysis = await ModerationService.analyzeText(content);
+
+        if (!analysis.isSafe) {
+            setModerationAlert({
+                isOpen: true,
+                feedback: analysis.feedback || 'Comentário potencialmente ofensivo.',
+                suggestion: analysis.suggestion || 'Vamos manter o respeito na comunidade?',
+                type: 'comment',
+                targetId: postId
+            });
+            return;
+        }
+
         const { data: profile } = await supabase
             .from('profiles')
             .select('username, avatar_url')
@@ -244,7 +285,54 @@ export const Feed = () => {
     };
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-6 animate-fade-in relative">
+            {/* Modal de Moderação Educativa */}
+            {moderationAlert.isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in zoom-in">
+                    <GlassCard className="max-w-md w-full p-6 border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+                        <div className="flex items-center gap-3 text-red-400 mb-4">
+                            <AlertTriangle size={32} />
+                            <h3 className="text-xl font-bold">Pausa para Reflexão</h3>
+                        </div>
+                        
+                        <p className="text-gray-300 mb-4 leading-relaxed">
+                            {moderationAlert.feedback}
+                        </p>
+                        
+                        <div className="bg-white/5 p-4 rounded-xl border border-white/10 mb-6">
+                            <p className="text-sm text-gray-400 mb-2 font-bold uppercase tracking-wider">Sugestão da IA:</p>
+                            <p className="text-neon-green italic">"{moderationAlert.suggestion}"</p>
+                        </div>
+
+                        <p className="text-xs text-gray-500 mb-6 text-center">
+                            No SeuPsi, acreditamos que a internet tem dono: <strong>a responsabilidade coletiva</strong>. 
+                            Ofensas e agressividade não têm espaço aqui.
+                        </p>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setModerationAlert({ ...moderationAlert, isOpen: false })}
+                                className="flex-1 py-3 bg-neon-purple hover:bg-neon-purple/80 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all"
+                            >
+                                <Edit3 size={18} /> Editar Texto
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setModerationAlert({ ...moderationAlert, isOpen: false });
+                                    if (moderationAlert.type === 'post') setNewPostContent('');
+                                    if (moderationAlert.type === 'comment' && moderationAlert.targetId) {
+                                        setNewCommentContent(prev => ({ ...prev, [moderationAlert.targetId!]: '' }));
+                                    }
+                                }}
+                                className="px-4 py-3 bg-white/10 hover:bg-red-500/20 text-gray-300 hover:text-red-400 rounded-xl font-bold transition-all"
+                            >
+                                Descartar
+                            </button>
+                        </div>
+                    </GlassCard>
+                </div>
+            )}
+
             {/* Create Post */}
             <GlassCard className="p-6">
                 <textarea
@@ -252,13 +340,15 @@ export const Feed = () => {
                     onChange={(e) => setNewPostContent(e.target.value)}
                     placeholder="Compartilhe algo inspirador..."
                     className="w-full h-24 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-neon-purple transition-colors resize-none"
+                    disabled={isModerating}
                 />
                 <button
                     onClick={handleCreatePost}
-                    disabled={!newPostContent.trim()}
-                    className="mt-3 px-6 py-2 bg-neon-purple hover:bg-neon-purple/80 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!newPostContent.trim() || isModerating}
+                    className="mt-3 px-6 py-2 bg-neon-purple hover:bg-neon-purple/80 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                    Publicar
+                    {isModerating ? 'Analisando...' : 'Publicar'}
+                    {isModerating && <span className="animate-pulse">...</span>}
                 </button>
             </GlassCard>
 
